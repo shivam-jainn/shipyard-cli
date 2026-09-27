@@ -29,15 +29,88 @@ This repository is the **command-line binary only**. The evaluation engine lives
 
 ## Requirements
 
-- Go 1.26+
-- Docker (for `docker` sandbox environments; use `--env local` to run without it)
+- macOS or Linux, amd64 or arm64
+- Docker, for `docker` sandbox environments (use `--env local` to run without it)
+- `python3`, because the engine runs every rubric as `python3 <script>`
+- `git`, since evalsets may reference remote agent repositories
 
-The engine dependency is resolved through a `replace` directive pointing at `../shipyard-core`, so clone both repositories side by side:
+**There is no Go requirement to install Shipyard.** You install a prebuilt
+binary. See [Why you cannot `go install` this](#why-you-cannot-go-install-this).
+
+---
+
+## Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/install.sh | sh
+```
+
+That installs the latest **stable** release. The installer verifies the
+SHA256 checksum before writing anything, and it only needs `curl` and `tar`.
+
+```bash
+# follow the test channel while you evaluate a new CLI
+curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/install.sh \
+  | sh -s -- --channel test
+
+# pin an exact version, which is what you want in CI
+curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/install.sh \
+  | sh -s -- --version v0.1.0
+```
+
+| Channel | Tracks | Use for |
+| :--- | :--- | :--- |
+| `stable` | latest non-prerelease | production |
+| `test` | latest `-alpha` / `-beta` / `-rc` | validating a release against your evals |
+| `dev` | latest `-dev` build | debugging the CLI itself |
+
+Or run it as a container, which is the easiest way to get Docker-in-Docker
+sandboxing:
+
+```bash
+docker run --rm -it -v "$PWD:/src" -v /var/run/docker.sock:/var/run/docker.sock \
+  ghcr.io/shivam-jainn/shipyard-cli:latest run ./my-eval
+```
+
+Verify, and uninstall:
+
+```bash
+shipyard version     # version, CLI commit, engine commit, channel
+./install.sh --uninstall
+```
+
+### Why you cannot `go install` this
+
+The evaluation engine, [`shipyard-core`](https://github.com/shivam-jainn/shipyard-core),
+is a **private** repository. This module depends on it through a filesystem
+`replace` directive, and the Go toolchain explicitly refuses to install any
+module whose `go.mod` contains one:
+
+```
+The go.mod file for the module providing named packages contains one or
+more replace directives. It must not contain directives that would cause
+it to be interpreted differently than if it were the main module.
+```
+
+So `go install github.com/shivam-jainn/shipyard-cli/cmd/shipyard@latest` cannot
+work — for you, for CI, or for anyone else. That is why distribution is
+artifacts-only: checksummed release tarballs and a container image.
+
+This also means you can read this repository's source but **cannot build it**,
+because the engine is unreachable. That is intended.
+
+### Building from source
+
+You need access to the private engine, plus Go 1.26+:
 
 ```bash
 git clone https://github.com/shivam-jainn/shipyard-cli.git
 cd shipyard-cli
 git clone https://github.com/shivam-jainn/shipyard-core.git ../shipyard-core
+
+make init
+make build
+make version     # what this tree would publish
 ```
 
 ---
@@ -45,17 +118,19 @@ git clone https://github.com/shivam-jainn/shipyard-core.git ../shipyard-core
 ## Quickstart
 
 ```bash
-make init      # download and verify dependencies
-make build     # build bin/shipyard
-make install   # install to /opt/homebrew/bin or $GOPATH/bin
-```
-
-Scaffold and run an evaluation:
-
-```bash
 shipyard init eval fix-memory-leak
 shipyard run ./fix-memory-leak
 ```
+
+Inspect what ran:
+
+```bash
+shipyard version          # which build this is
+cat fix-memory-leak/rollouts/*/metrics.json
+```
+
+Rollouts are written to `<eval-path>/rollouts/<run-id>/` containing
+`trajectory.json`, `metrics.json`, `rubrics.json`, and `artifacts/`.
 
 ---
 
@@ -97,7 +172,23 @@ Version stamping is injected at link time and can be overridden at runtime with 
 
 ## Releases
 
-Tagged `v*` pushes build stripped, `-trimpath` binaries for `linux` and `darwin` on `amd64` and `arm64` via [`.github/workflows/release.yml`](.github/workflows/release.yml), and attach them to the GitHub release.
+Shipyard publishes to three channels, and the tag alone decides which:
+
+| Tag | Channel | Result |
+| :--- | :--- | :--- |
+| `v1.2.3` | `stable` | GitHub release + `:latest`, `:stable`, `:<version>` images |
+| `v1.2.3-rc.1` | `test` | prerelease + `:test` image |
+| `v0.0.0-dev.42` | `dev` | prerelease + `:dev` image |
+
+Stable tags must be reachable from `main`; test and dev tags from `develop`.
+The pipeline refuses to publish otherwise, so a release cannot be cut from the
+wrong branch.
+
+Every release cross-compiles for linux and darwin on amd64 and arm64, strips
+symbols and local paths, smoke-tests the linux/amd64 binary, and publishes
+SHA256 checksums, an SPDX SBOM, and a build-provenance attestation.
+
+See [RELEASING.md](RELEASING.md) for the full runbook.
 
 ---
 
