@@ -1,0 +1,58 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build Multi-Arch Hardened Binaries
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin]
+        goarch: [amd64, arm64]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # The engine lives in shipyard-core and is resolved via a `replace`
+      # directive, so it must sit next to this checkout.
+      - name: Checkout Engine (shipyard-core)
+        uses: actions/checkout@v4
+        with:
+          repository: shivam-jainn/shipyard-core
+          path: shipyard-core
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - name: Set Release Version
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "RELEASE_VERSION=${TAG_NAME}" >> $GITHUB_ENV
+
+      - name: Build Hardened Binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          OUTPUT_NAME="shipyard-${{ env.RELEASE_VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}"
+          mkdir -p dist
+          # Strip debug symbols (-s), DWARF info (-w), build ID (-buildid=), and local path strings (-trimpath)
+          go build -trimpath -ldflags="-s -w -buildid= -X 'github.com/shivam-jainn/shipyard-cli/cmd/cmdline.Version=${{ env.RELEASE_VERSION }}'" -o "dist/${OUTPUT_NAME}" ./cmd/shipyard/main.go
+          tar -czf "dist/${OUTPUT_NAME}.tar.gz" -C dist "${OUTPUT_NAME}"
+
+      - name: Upload Binary to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
