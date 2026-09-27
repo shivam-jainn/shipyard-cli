@@ -2,20 +2,28 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  verify:
     name: Build & Test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout CLI
         uses: actions/checkout@v4
 
-      # The engine lives in shipyard-core and is resolved via a `replace`
-      # directive, so it must sit next to this checkout.
+      # The evaluation engine lives in the private shipyard-core repo and is
+      # wired in through a filesystem `replace` directive, so it must be
+      # checked out as a sibling of this repository for the module to resolve.
       - name: Checkout Engine (shipyard-core)
         uses: actions/checkout@v4
         with:
@@ -27,18 +35,107 @@ jobs:
         with:
           go-version: '1.26'
           cache: true
+          cache-dependency-path: |
+            go.sum
+            ../shipyard-core/go.sum
 
-      - name: Download Dependencies
-        run: go mod download
+      - name: Download dependencies
+        run: |
+          go mod download
+          go mod verify
 
-      - name: Verify Dependencies
-        run: go mod verify
+      - name: Check formatting
+        run: |
+          unformatted="$(gofmt -l . 2>/dev/null || true)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt needed on:"; echo "$unformatted"; exit 1
+          fi
 
-      - name: Run Tests
-        run: go test -v -race ./...
+      - name: Vet
+        run: go vet ./...
 
-      - name: Build Binary (Stripped)
+      # ubuntu-latest ships a working Docker daemon, so the pkg/engine
+      # integration tests run here even though they cannot run on a laptop
+      # without Docker.
+      - name: Test
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.run_id }}
+          path: coverage.out
+          retention-days: 7
+
+  cross-compile:
+    name: Cross-compile ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { goos: linux,   goarch: amd64 }
+          - { goos: linux,   goarch: arm64 }
+          - { goos: darwin,  goarch: amd64 }
+          - { goos: darwin,  goarch: arm64 }
+    steps:
+      - name: Checkout CLI
+        uses: actions/checkout@v4
+
+      - name: Checkout Engine (shipyard-core)
+        uses: actions/checkout@v4
+        with:
+          repository: shivam-jainn/shipyard-core
+          path: shipyard-core
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          VERSION: ci-${{ github.sha }}
         run: |
           mkdir -p bin
-          go build -ldflags="-s -w -X 'github.com/shivam-jainn/shipyard-cli/cmd/cmdline.Version=ci-${{ github.sha }}'" -o bin/shipyard ./cmd/shipyard/main.go
-          ./bin/shipyard version
+          go build -trimpath \
+            -ldflags="-s -w -buildid= -X 'github.com/shivam-jainn/shipyard-cli/cmd/cmdline.Version=${VERSION}'" \
+            -o "bin/shipyard-${GOOS}-${GOARCH}" ./cmd/shipyard/main.go
+
+      - name: Smoke test (native platform only)
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        run: ./bin/shipyard-${GOOS}-${GOARCH} version
+
+  installer:
+    name: Installer self-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout CLI
+        uses: actions/checkout@v4
+
+      - name: Syntax check
+        run: bash -n install.sh
+
+      - name: Usage and argument validation
+        run: |
+          ./install.sh --help
+          # an unknown channel must fail loudly rather than silently defaulting
+          if ./install.sh --channel bogus; then
+            echo "::error::expected a non-zero exit for an invalid channel"; exit 1
+          fi
+          # a pinned, nonexistent version must fail with a clear message
+          if ./install.sh --version v0.0.0-does-not-exist --dry-run; then
+            echo "::error::expected a non-zero exit for a missing release"; exit 1
+          fi
+
+      - name: Shellcheck
+        if: always()
+        continue-on-error: true
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: .
+          files: install.sh
