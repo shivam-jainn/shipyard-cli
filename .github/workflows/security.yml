@@ -36,6 +36,7 @@ jobs:
   govulncheck:
     name: govulncheck
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Checkout CLI
         uses: actions/checkout@v4
@@ -44,6 +45,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: shivam-jainn/shipyard-core
+          # GITHUB_TOKEN is scoped to this repository and cannot read the
+          # private engine, so a PAT with `repo` scope is required. Forks do
+          # not receive secrets, hence the empty-string fallback.
+          token: ${{ secrets.SHIPYARD_ENGINE_TOKEN || '' }}
           path: shipyard-core
 
       - name: Set up Go
