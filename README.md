@@ -20,7 +20,7 @@ This repository is the **command-line binary only**. The evaluation engine lives
 | Repository | Role |
 | :--- | :--- |
 | [`shipyard-core`](https://github.com/shivam-jainn/shipyard-core) | Evaluation engine, agent plugins, sandboxes, ATIF capture, rubrics. Go library. |
-| **`shipyard-cli`** (this repo) | The `shipyard` binary, cobra commands, and release pipeline. |
+| **`shipyard-cli`** (this repo) | The `shipyard` command-line binary. |
 | [`shipyard-web`](https://github.com/shivam-jainn/shipyard-web) | Documentation site and marketing pages. |
 | [`shipyard-ci`](https://github.com/shivam-jainn/shipyard-ci) | CI/CD integrations that gate evals in your pipelines. |
 | [`shipyard-registry`](https://github.com/shivam-jainn/shipyard-registry) | Prebuilt evalsets and reference agents. |
@@ -34,8 +34,7 @@ This repository is the **command-line binary only**. The evaluation engine lives
 - `python3`, because the engine runs every rubric as `python3 <script>`
 - `git`, since evalsets may reference remote agent repositories
 
-**There is no Go requirement to install Shipyard.** You install a prebuilt
-binary. See [Why you cannot `go install` this](#why-you-cannot-go-install-this).
+**There is no Go requirement to install Shipyard.** You install a prebuilt binary.
 
 ---
 
@@ -77,40 +76,6 @@ Verify, and uninstall:
 ```bash
 shipyard version     # version, CLI commit, engine commit, channel
 ./install.sh --uninstall
-```
-
-### Why you cannot `go install` this
-
-The evaluation engine, [`shipyard-core`](https://github.com/shivam-jainn/shipyard-core),
-is a **private** repository. This module depends on it through a filesystem
-`replace` directive, and the Go toolchain explicitly refuses to install any
-module whose `go.mod` contains one:
-
-```
-The go.mod file for the module providing named packages contains one or
-more replace directives. It must not contain directives that would cause
-it to be interpreted differently than if it were the main module.
-```
-
-So `go install github.com/shivam-jainn/shipyard-cli/cmd/shipyard@latest` cannot
-work — for you, for CI, or for anyone else. That is why distribution is
-artifacts-only: checksummed release tarballs and a container image.
-
-This also means you can read this repository's source but **cannot build it**,
-because the engine is unreachable. That is intended.
-
-### Building from source
-
-You need access to the private engine, plus Go 1.26+:
-
-```bash
-git clone https://github.com/shivam-jainn/shipyard-cli.git
-cd shipyard-cli
-git clone https://github.com/shivam-jainn/shipyard-core.git ../shipyard-core
-
-make init
-make build
-make version     # what this tree would publish
 ```
 
 ---
@@ -155,40 +120,6 @@ Rollouts are written to `<eval-path>/rollouts/<run-id>/` containing
 ### Runtime overrides
 
 Agents, models, providers, and sandbox environments can be swapped on the fly without editing config files.
-
----
-
-## Development
-
-```bash
-make test      # run unit and integration tests
-make build     # cross-compile (GOOS=linux GOARCH=amd64 make build)
-make clean     # remove build artifacts
-```
-
-Version stamping is injected at link time and can be overridden at runtime with the `SHIPYARD_VERSION` environment variable (see [`.env.example`](.env.example)).
-
----
-
-## Releases
-
-Shipyard publishes to three channels, and the tag alone decides which:
-
-| Tag | Channel | Result |
-| :--- | :--- | :--- |
-| `v1.2.3` | `stable` | GitHub release + `:latest`, `:stable`, `:<version>` images |
-| `v1.2.3-rc.1` | `test` | prerelease + `:test` image |
-| `v0.0.0-dev.42` | `dev` | prerelease + `:dev` image |
-
-Stable tags must be reachable from `main`; test and dev tags from `develop`.
-The pipeline refuses to publish otherwise, so a release cannot be cut from the
-wrong branch.
-
-Every release cross-compiles for linux and darwin on amd64 and arm64, strips
-symbols and local paths, smoke-tests the linux/amd64 binary, and publishes
-SHA256 checksums, an SPDX SBOM, and a build-provenance attestation.
-
-See [RELEASING.md](RELEASING.md) for the full runbook.
 
 ---
 
