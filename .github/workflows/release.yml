@@ -37,7 +37,10 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # Must be registry-qualified. Without the ghcr.io/ prefix, buildx resolves
+  # these tags against Docker Hub and the push fails with:
+  #   401 Unauthorized: access token has insufficient scopes
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
   ARTIFACT_BIN: shipyard
 
 jobs:
@@ -422,6 +425,13 @@ jobs:
           done
 
           git add -A
-          git commit -m "release: ${CHANNEL} -> ${TAG}"
-          git push origin dist --force
-          echo "::notice::dist manifest: ${CHANNEL}=${TAG}"
+          # A re-release of the same tag leaves the manifest unchanged, and
+          # `git commit` exits 1 on a clean tree. Only commit when there is
+          # actually something to record.
+          if git diff --cached --quiet; then
+            echo "::notice::dist manifest already points ${CHANNEL} at ${TAG}"
+          else
+            git commit -m "release: ${CHANNEL} -> ${TAG}"
+            git push origin dist --force
+            echo "::notice::dist manifest: ${CHANNEL}=${TAG}"
+          fi
