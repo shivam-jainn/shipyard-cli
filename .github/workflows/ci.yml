@@ -95,6 +95,9 @@ jobs:
           - { goos: linux,   goarch: arm64 }
           - { goos: darwin,  goarch: amd64 }
           - { goos: darwin,  goarch: arm64 }
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
     steps:
       - name: Checkout CLI
         uses: actions/checkout@v4
@@ -120,10 +123,11 @@ jobs:
         with:
           go-version: '1.26.8'
 
+      # GOOS/GOARCH are job-level so the smoke test below can see them; as
+      # step-level env they were empty in that step, resolving the binary to
+      # the literal path ./bin/shipyard--.
       - name: Build
         env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
           VERSION: ci-${{ github.sha }}
         run: |
           mkdir -p bin
@@ -133,7 +137,7 @@ jobs:
 
       - name: Smoke test (native platform only)
         if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
-        run: ./bin/shipyard-${GOOS}-${GOARCH} version
+        run: ./bin/shipyard-${{ matrix.goos }}-${{ matrix.goarch }} version
 
   installer:
     name: Installer self-test
