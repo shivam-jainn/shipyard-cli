@@ -132,10 +132,18 @@ jobs:
         with:
           repository: shivam-jainn/shipyard-core
           # GITHUB_TOKEN is scoped to this repository and cannot read the
-          # private engine, so a PAT with `repo` scope is required. Forks do
-          # not receive secrets, hence the empty-string fallback.
-          token: ${{ secrets.SHIPYARD_ENGINE_TOKEN || '' }}
+          # private engine, so a read-only deploy key is used instead of a PAT.
+          # Forks do not receive secrets, hence the empty-string fallback.
+          ssh-key: ${{ secrets.CORE_SSH_KEY }}
+          ssh-strict: false
           path: shipyard-core
+
+      # actions/checkout cannot write outside the workspace, so the engine is
+      # moved up to the sibling path that the go.mod `replace` directive needs.
+      - name: Move engine to sibling directory
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/../shipyard-core"
+          mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
 
       - name: Set up Go
         uses: actions/setup-go@v5
