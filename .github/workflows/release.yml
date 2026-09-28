@@ -164,9 +164,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
+          # CGO_ENABLED=0 produces a statically linked binary. Without it the
+          # glibc-linked build cannot run in the Alpine image, and the
+          # Dockerfile's `shipyard version` gate fails with exit 133.
           # -trimpath strips local paths, -s -w drop the symbol table and DWARF,
           # -buildid= makes builds reproducible.
-          go build -trimpath -mod=readonly \
+          CGO_ENABLED=0 go build -trimpath -mod=readonly \
             -ldflags="-s -w -buildid= \
               -X 'github.com/shivam-jainn/shipyard-cli/cmd/cmdline.Version=${VERSION}' \
               -X 'github.com/shivam-jainn/shipyard-cli/cmd/cmdline.Commit=${COMMIT}'" \

@@ -122,7 +122,9 @@ jobs:
           LDFLAGS="${LDFLAGS} -X '${PKG}.Version=${BUILD_VERSION}'"
           LDFLAGS="${LDFLAGS} -X '${PKG}.Commit=${SHA}'"
           LDFLAGS="${LDFLAGS} -X '${PKG}.Channel=${CHANNEL}'"
-          go build -trimpath -mod=readonly -ldflags="${LDFLAGS}" \
+          # CGO_ENABLED=0 keeps the artifact statically linked, matching the
+          # release pipeline and the Alpine runtime image.
+          CGO_ENABLED=0 go build -trimpath -mod=readonly -ldflags="${LDFLAGS}" \
             -o "dist/shipyard-${BUILD_VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}" \
             ./cmd/shipyard/main.go
           tar -czf "dist/shipyard-${BUILD_VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz" \
