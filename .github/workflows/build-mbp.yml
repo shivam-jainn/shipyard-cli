@@ -42,6 +42,8 @@ jobs:
 
       - name: Move engine to sibling directory
         run: |
+          # Clear any leftover from a previous job in this run before moving.
+          rm -rf "$GITHUB_WORKSPACE/../shipyard-core"
           mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
           echo "engine at $(cd "$GITHUB_WORKSPACE/../shipyard-core" && pwd)"
 
@@ -52,7 +54,6 @@ jobs:
           cache: true
           cache-dependency-path: |
             go.sum
-            ../shipyard-core/go.sum
 
       - name: Download dependencies
         run: |
@@ -93,6 +94,8 @@ jobs:
 
       - name: Move engine to sibling directory
         run: |
+          # Clear any leftover from a previous job in this run before moving.
+          rm -rf "$GITHUB_WORKSPACE/../shipyard-core"
           mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
           echo "engine at $(cd "$GITHUB_WORKSPACE/../shipyard-core" && pwd)"
 
@@ -103,7 +106,6 @@ jobs:
           cache: true
           cache-dependency-path: |
             go.sum
-            ../shipyard-core/go.sum
 
       - name: Build binary
         env:
