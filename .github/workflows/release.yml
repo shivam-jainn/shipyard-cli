@@ -27,6 +27,9 @@ permissions:
   contents: write
   id-token: write
   packages: write
+  # actions/attest-build-provenance needs this; without it the attestation
+  # write fails with "Resource not accessible by integration".
+  attestations: write
 
 concurrency:
   group: release-${{ github.ref }}
@@ -342,21 +345,21 @@ jobs:
           CHANNEL: ${{ needs.classify.outputs.channel }}
         run: |
           set -euo pipefail
-          TAGS="${IMAGE_NAME}:${VERSION}"
-          case "$CHANNEL" in
-            stable)
-              TAGS="${TAGS} ${IMAGE_NAME}:latest ${IMAGE_NAME}:stable"
-              ;;
-            test)
-              TAGS="${TAGS} ${IMAGE_NAME}:test"
-              ;;
-            dev)
-              TAGS="${TAGS} ${IMAGE_NAME}:dev"
-              ;;
-          esac
+          # docker/build-push-action splits `tags` on newlines, so each tag
+          # must be on its own line. Space-separated tags reached buildx as a
+          # single --tag argument and failed with 'invalid reference format'.
+          {
+            echo "${IMAGE_NAME}:${VERSION}"
+            case "$CHANNEL" in
+              stable) echo "${IMAGE_NAME}:latest"; echo "${IMAGE_NAME}:stable" ;;
+              test)   echo "${IMAGE_NAME}:test" ;;
+              dev)    echo "${IMAGE_NAME}:dev" ;;
+            esac
+          } > "$RUNNER_TEMP/tags.txt"
+          cat "$RUNNER_TEMP/tags.txt"
           {
             echo "tags<<EOF"
-            echo "$TAGS"
+            cat "$RUNNER_TEMP/tags.txt"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
