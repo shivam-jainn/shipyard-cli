@@ -14,27 +14,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  preflight:
-    name: Preflight
-    runs-on: ubuntu-latest
-    # A fork pull request gets no secrets, so the engine cannot be fetched and
-    # the build jobs cannot run. Skipped rather than red.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    steps:
-      - name: Require the engine access token
-        env:
-          TOKEN: ${{ secrets.SHIPYARD_ENGINE_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "$TOKEN" ]; then
-            echo "::error::secret SHIPYARD_ENGINE_TOKEN is not set."
-            echo "::error::shipyard-core is private and GITHUB_TOKEN cannot read it, so the"
-            echo "::error::CLI cannot be built without a PAT that has 'repo' scope."
-            echo "::error::Add it under Settings -> Secrets and variables -> Actions."
-            exit 1
-          fi
-          echo "::notice::engine access token present"
-
   verify:
     name: Build & Test
     runs-on: ubuntu-latest
@@ -53,19 +32,26 @@ jobs:
         with:
           repository: shivam-jainn/shipyard-core
           # GITHUB_TOKEN is scoped to this repository and cannot read the
-          # private engine, so a PAT with `repo` scope is required. Forks do
-          # not receive secrets, hence the empty-string fallback.
-          token: ${{ secrets.SHIPYARD_ENGINE_TOKEN || '' }}
+          # private engine, so a read-only deploy key is used instead of a PAT.
+          # Forks do not receive secrets, hence the empty-string fallback.
+          ssh-key: ${{ secrets.CORE_SSH_KEY }}
+          ssh-strict: false
           path: shipyard-core
+
+      # actions/checkout cannot write outside the workspace, so the engine is
+      # moved up to the sibling path that the go.mod `replace` directive needs.
+      - name: Move engine to sibling directory
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/../shipyard-core"
+          mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          go-version: '1.26.8'
           cache: true
           cache-dependency-path: |
             go.sum
-            ../shipyard-core/go.sum
 
       - name: Download dependencies
         run: |
@@ -109,6 +95,9 @@ jobs:
           - { goos: linux,   goarch: arm64 }
           - { goos: darwin,  goarch: amd64 }
           - { goos: darwin,  goarch: arm64 }
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
     steps:
       - name: Checkout CLI
         uses: actions/checkout@v4
@@ -118,20 +107,27 @@ jobs:
         with:
           repository: shivam-jainn/shipyard-core
           # GITHUB_TOKEN is scoped to this repository and cannot read the
-          # private engine, so a PAT with `repo` scope is required. Forks do
-          # not receive secrets, hence the empty-string fallback.
-          token: ${{ secrets.SHIPYARD_ENGINE_TOKEN || '' }}
+          # private engine, so a read-only deploy key is used instead of a PAT.
+          # Forks do not receive secrets, hence the empty-string fallback.
+          ssh-key: ${{ secrets.CORE_SSH_KEY }}
+          ssh-strict: false
           path: shipyard-core
+
+      - name: Move engine to sibling directory
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/../shipyard-core"
+          mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          go-version: '1.26.8'
 
+      # GOOS/GOARCH are job-level so the smoke test below can see them; as
+      # step-level env they were empty in that step, resolving the binary to
+      # the literal path ./bin/shipyard--.
       - name: Build
         env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
           VERSION: ci-${{ github.sha }}
         run: |
           mkdir -p bin
@@ -141,7 +137,7 @@ jobs:
 
       - name: Smoke test (native platform only)
         if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
-        run: ./bin/shipyard-${GOOS}-${GOARCH} version
+        run: ./bin/shipyard-${{ matrix.goos }}-${{ matrix.goarch }} version
 
   installer:
     name: Installer self-test
