@@ -24,6 +24,11 @@ var Version = "alpha 0.0.1"
 // Injected at link time by the release pipeline; empty for local builds.
 var Commit = ""
 
+// EngineCommit is the shipyard-core commit the binary was built against.
+// The engine is a private repository resolved through a filesystem replace,
+// so this is the only record tying a released binary to an engine state.
+var EngineCommit = ""
+
 // Channel is the release channel the binary was published on
 // (stable, test, or dev). Injected at link time; empty for local builds.
 var Channel = ""
@@ -42,6 +47,15 @@ func GetCommit() string {
 		return envCommit
 	}
 	return Commit
+}
+
+// GetEngineCommit returns the shipyard-core commit the binary was built
+// against, if recorded.
+func GetEngineCommit() string {
+	if envEngine := os.Getenv("SHIPYARD_ENGINE_COMMIT"); envEngine != "" {
+		return envEngine
+	}
+	return EngineCommit
 }
 
 // GetChannel returns the release channel this binary was published on.
@@ -81,6 +95,9 @@ func init() {
 			fmt.Printf("shipyard version %s\n", GetVersion())
 			if c := GetCommit(); c != "" {
 				fmt.Printf("commit:      %s\n", c)
+			}
+			if e := GetEngineCommit(); e != "" {
+				fmt.Printf("engine:      %s\n", e)
 			}
 			fmt.Printf("channel:     %s\n", GetChannel())
 		},
