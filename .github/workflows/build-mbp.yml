@@ -31,12 +31,19 @@ jobs:
         uses: actions/checkout@v4
 
       # Read-only deploy key; the private engine is not reachable by GITHUB_TOKEN.
+      # actions/checkout refuses a path outside the workspace, so it lands in a
+      # subdir and is then moved up to the sibling location the replace wants.
       - name: Checkout Engine (shipyard-core)
         uses: actions/checkout@v4
         with:
           repository: shivam-jainn/shipyard-core
-          path: ../shipyard-core
+          path: shipyard-core
           ssh-key: ${{ secrets.CORE_SSH_KEY }}
+
+      - name: Move engine to sibling directory
+        run: |
+          mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
+          echo "engine at $(cd "$GITHUB_WORKSPACE/../shipyard-core" && pwd)"
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -81,8 +88,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: shivam-jainn/shipyard-core
-          path: ../shipyard-core
+          path: shipyard-core
           ssh-key: ${{ secrets.CORE_SSH_KEY }}
+
+      - name: Move engine to sibling directory
+        run: |
+          mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
+          echo "engine at $(cd "$GITHUB_WORKSPACE/../shipyard-core" && pwd)"
 
       - name: Set up Go
         uses: actions/setup-go@v5
