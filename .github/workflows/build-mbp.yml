@@ -56,6 +56,11 @@ jobs:
           # fails with 'Host key verification failed'. checkout populates the
           # host key itself via ssh-keyscan.
           ssh-strict: false
+          # The SSH fetch over the home network intermittently stalls and hits
+          # the action's own ~50s timeout ("The operation was canceled"). The
+          # repo is ~200KB, so retrying is cheap and effective.
+          retry: 3
+          retry-wait-seconds: 10
 
       - name: Move engine to sibling directory
         run: |
@@ -125,6 +130,11 @@ jobs:
           # fails with 'Host key verification failed'. checkout populates the
           # host key itself via ssh-keyscan.
           ssh-strict: false
+          # The SSH fetch over the home network intermittently stalls and hits
+          # the action's own ~50s timeout ("The operation was canceled"). The
+          # repo is ~200KB, so retrying is cheap and effective.
+          retry: 3
+          retry-wait-seconds: 10
 
       - name: Move engine to sibling directory
         run: |
