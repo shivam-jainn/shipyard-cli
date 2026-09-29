@@ -15,10 +15,7 @@
 ## Repository Role
 
 This repository is the **command-line binary**: the `shipyard` binary, its
-commands, and the release pipeline. The evaluation engine is a private
-module dependency, which is why this project is distributed as signed
-artifacts rather than built from source (see
-[Why you cannot go install this](#why-you-cannot-go-install-this)).
+commands, and the release pipeline.
 
 | Repository | Visibility | Role |
 | :--- | :--- | :--- |
@@ -31,7 +28,7 @@ artifacts rather than built from source (see
 
 - macOS or Linux, amd64 or arm64
 - Docker, for `docker` sandbox environments (use `--env local` to run without it)
-- `python3`, because the engine runs every rubric as `python3 <script>`
+- `python3`, because rubrics are executed as `python3 <script>`
 - `git`, since evalsets may reference remote agent repositories
 
 **There is no Go requirement to install Shipyard.** You install a prebuilt
@@ -76,43 +73,21 @@ docker run --rm -it -v "$PWD:/src" -v /var/run/docker.sock:/var/run/docker.sock 
 Verify, and uninstall:
 
 ```bash
-shipyard version     # version, CLI commit, engine commit, channel
+shipyard version     # version, commit, channel
 ./install.sh --uninstall
 ```
 
-### Why you cannot `go install` this
+### Distribution
 
-The evaluation engine, [`shipyard-core`](https://github.com/shivam-jainn/shipyard-core),
-is a **private** repository. This module depends on it through a filesystem
-`replace` directive, and the Go toolchain explicitly refuses to install any
-module whose `go.mod` contains one:
-
-```
-The go.mod file for the module providing named packages contains one or
-more replace directives. It must not contain directives that would cause
-it to be interpreted differently than if it were the main module.
-```
-
-So `go install github.com/shivam-jainn/shipyard-cli/cmd/shipyard@latest` cannot
-work — for you, for CI, or for anyone else. That is why distribution is
-artifacts-only: checksummed release tarballs and a container image.
-
-This also means you can read this repository's source but **cannot build it**,
-because the engine is unreachable. That is intended.
-
-### Building from source
-
-You need access to the private engine, plus Go 1.26+:
+Install with `install.sh`, which verifies a SHA256 checksum before writing
+anything:
 
 ```bash
-git clone https://github.com/shivam-jainn/shipyard-cli.git
-cd shipyard-cli
-git clone https://github.com/shivam-jainn/shipyard-core.git ../shipyard-core
-
-make init
-make build
-make version     # what this tree would publish
+curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/install.sh | sh
 ```
+
+`go install` is not supported. Use the checksummed release tarballs or the
+container image.
 
 ---
 

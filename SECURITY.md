@@ -25,8 +25,8 @@ treated as a live issue and fixed on the next patch of the relevant channel.
 ## Threat model
 
 Shipyard is a CLI that executes AI agents, so it should be assumed to run
-arbitrary agent code. It is a developer tool, not a sandbox boundary: the
-engine runs commands, invokes the Docker CLI, and executes Python rubrics.
+arbitrary agent code. It is a developer tool, not a sandbox boundary: it runs
+commands, invokes the Docker CLI, and executes Python rubrics.
 
 In scope:
 
@@ -37,8 +37,8 @@ In scope:
 Out of scope:
 
 - Behaviour of agent code that Shipyard is asked to run
-- Anything in the private `shipyard-core` engine repository, which is not
-  distributed and is not covered by this policy
+- Third-party components bundled into a build, which are covered by their
+  own licenses
 - Denial of service caused by an intentionally heavy workload
 - Findings that require an attacker to already control your machine
 
@@ -62,14 +62,13 @@ report the discrepancy.
 
 ## Build integrity
 
-The CLI depends on a private engine repository, so this repository **cannot
-be built by anyone outside the project**. It can be read, but not compiled.
-Distribution is artifacts-only, and that is intentional.
+Distribution is artifacts-only: checksummed release tarballs and a container
+image. Every release ships a checksum file and an SPDX SBOM.
 
 The release pipeline is hardened against a compromised runner:
 
-- The engine is fetched with a **read-only** deploy key, so a compromised
-  runner cannot write to the engine repository
+- Private build dependencies are fetched with a **read-only** deploy key, so a
+  compromised runner cannot write to them
 - Binaries are built with `CGO_ENABLED=0` and `-trimpath`, and stripped of
   symbols and DWARF
 - Every build is covered by `govulncheck` and CodeQL

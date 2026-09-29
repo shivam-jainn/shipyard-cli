@@ -70,15 +70,8 @@ curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/inst
   | sh -s -- --version v0.0.1
 ```
 
-`shipyard version` reports the version, the CLI commit, the engine commit, and
+`shipyard version` reports the version, the commit, and the channel. It does
 the channel, so you can always tell what a given binary is.
-
-## Engine versions
-
-`shipyard-core` is private and is not distributed. It is tagged `core/v0.0.1`
-when you want an immutable snapshot. Every released CLI binary records the
-engine commit it was built against, so any published artifact traces back to
-an exact engine state.
 
 ## What is public
 
@@ -87,7 +80,5 @@ an exact engine state.
 | `shipyard-cli` | public | the distributed binary and its source |
 | `shipyard-ci` | public | the integration templates, useless without the CLI |
 
-The evaluation engine is a private module dependency. Because the CLI's source
-is public but the engine is not, an outsider who clones `shipyard-cli` cannot
-build it: the engine module is unreachable. That is intended. Distribution is
-through the checksummed release artifacts and the container image.
+Distribution is through the checksummed release artifacts and the container
+image. See `LICENSE` for permitted use.
