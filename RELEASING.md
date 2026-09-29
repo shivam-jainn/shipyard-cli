@@ -16,8 +16,8 @@ three, and the CLI's `install.sh` can install from any of them.
 | Channel | Where it is cut from | Tag shape | GitHub release | Container tags |
 | :--- | :--- | :--- | :--- | :--- |
 | `dev` | `develop`, automatically on every push | `v0.0.0-dev.<run>` | prerelease, pruned to the newest | `:dev` |
-| `test` | `develop` | `v0.1.0-alpha.1`, `-beta.1`, `-rc.1` | prerelease, kept | `:test` |
-| `stable` | `main` | `v0.1.0` | full release | `:latest`, `:stable`, `:<version>` |
+| `test` | `develop` | `v0.0.1-alpha.1`, `-beta.1`, `-rc.1` | prerelease, kept | `:test` |
+| `stable` | `main` | `v0.0.1` | full release | `:latest`, `:stable`, `:<version>` |
 
 The tag alone decides the channel. The release workflow **refuses to publish**
 a stable tag that is not reachable from `main`, or a test/dev tag that is not
@@ -32,13 +32,13 @@ git checkout develop && git pull
 # 2. open the release PR; it auto-merges once required checks pass
 gh workflow run promote.yml --repo shivam-jainn/shipyard-cli
 # or pass an explicit version:
-gh workflow run promote.yml --repo shivam-jainn/shipyard-cli -f version=0.1.0
+gh workflow run promote.yml --repo shivam-jainn/shipyard-cli -f version=0.0.1
 # add -f dry_run=true to open the PR without merging
 
 # 3. tag the merge commit on main. This triggers the release pipeline.
 git checkout main && git pull
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.0.1
+git push origin v0.0.1
 ```
 
 The pipeline then cross-compiles, smoke-tests, checksums, generates an SBOM,
@@ -51,8 +51,8 @@ Test releases come off `develop` the same way, with a prerelease tag:
 
 ```bash
 git checkout develop && git pull
-git tag v0.1.0-rc.1
-git push origin v0.1.0-rc.1
+git tag v0.0.1-rc.1
+git push origin v0.0.1-rc.1
 ```
 
 ## Installing
@@ -67,7 +67,7 @@ curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/inst
 
 # pinned, for production
 curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/install.sh \
-  | sh -s -- --version v0.1.0
+  | sh -s -- --version v0.0.1
 ```
 
 `shipyard version` reports the version, the CLI commit, the engine commit, and
@@ -75,7 +75,7 @@ the channel, so you can always tell what a given binary is.
 
 ## Engine versions
 
-`shipyard-core` is private and is not distributed. It is tagged `core/v0.1.0`
+`shipyard-core` is private and is not distributed. It is tagged `core/v0.0.1`
 when you want an immutable snapshot. Every released CLI binary records the
 engine commit it was built against, so any published artifact traces back to
 an exact engine state.
