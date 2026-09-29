@@ -48,7 +48,8 @@ jobs:
       - name: Install nfpm
         run: |
           set -euo pipefail
-          NFPM=v2.41.3
+          # The release tag carries a leading 'v'; the asset filename does not.
+          NFPM_VER=2.41.3
           # uname -m reports aarch64, but goreleaser names the asset arm64.
           case "$(uname -m)" in
             x86_64|amd64) ASSET_ARCH=x86_64 ;;
@@ -56,7 +57,7 @@ jobs:
             *) echo "::error::unsupported arch $(uname -m)"; exit 1 ;;
           esac
           curl -sfL -o nfpm.tgz \
-            "https://github.com/goreleaser/nfpm/releases/download/${NFPM}/nfpm_${NFPM}_Linux_${ASSET_ARCH}.tar.gz"
+            "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VER}/nfpm_${NFPM_VER}_Linux_${ASSET_ARCH}.tar.gz"
           tar xzf nfpm.tgz nfpm
           sudo install -m755 nfpm /usr/local/bin/nfpm
           rm nfpm.tgz
