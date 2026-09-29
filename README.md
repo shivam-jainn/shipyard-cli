@@ -41,6 +41,14 @@ binary. See [Why you cannot `go install` this](#why-you-cannot-go-install-this).
 
 ## Install
 
+<<<<<<< HEAD
+```bash
+curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/install.sh | sh
+```
+
+That installs the latest **stable** release. The installer verifies the
+SHA256 checksum before writing anything, and it only needs `curl` and `tar`.
+=======
 > **Shipyard is in alpha.** There is no stable release yet — the newest
 > published version is a prerelease. Install the `test` channel:
 >
@@ -57,6 +65,7 @@ binary. See [Why you cannot `go install` this](#why-you-cannot-go-install-this).
 
 The installer verifies the SHA256 checksum before writing anything, and it
 only needs `curl` and `tar`.
+>>>>>>> origin/main
 
 ```bash
 # follow the test channel while you evaluate a new CLI
@@ -65,7 +74,11 @@ curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/inst
 
 # pin an exact version, which is what you want in CI
 curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/install.sh \
+<<<<<<< HEAD
+  | sh -s -- --version v0.1.0
+=======
   | sh -s -- --version v0.0.1
+>>>>>>> origin/main
 ```
 
 | Channel | Tracks | Use for |
