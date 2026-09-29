@@ -10,12 +10,12 @@
 #   curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/install.sh | sh
 #
 # Channels:
-#   stable (default)  latest non-prerelease          v0.1.0
-#   test              latest alpha/rc prerelease     v0.1.0-rc.1
-#   dev               latest development build        v0.0.0-dev.42
+#   stable (default)  latest non-prerelease          v0.0.1
+#   test              latest alpha/beta/rc prerelease v0.0.1-alpha.1
+#   dev               latest development build        v0.0.1-dev.42
 #
 # Usage:
-#   install.sh [--channel stable|test|dev] [--version v0.1.0]
+#   install.sh [--channel stable|test|dev] [--version v0.0.1]
 #              [--install-dir DIR] [--yes] [--dry-run] [--uninstall]
 #
 # Environment:

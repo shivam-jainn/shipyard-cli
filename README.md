@@ -55,7 +55,7 @@ curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/inst
 
 # pin an exact version, which is what you want in CI
 curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/install.sh \
-  | sh -s -- --version v0.1.0
+  | sh -s -- --version v0.0.1
 ```
 
 | Channel | Tracks | Use for |
