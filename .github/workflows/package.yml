@@ -164,7 +164,10 @@ jobs:
             aarch64|arm64) HOST_DEB_AMD=arm64; HOST_DEB_ARM=arm64 ;;
             *) echo "::error::unsupported runner arch $(uname -m)"; exit 1 ;;
           esac
-          deb="$(ls "packages/*_${HOST_DEB_ARM}.deb" | head -1)"
+          # find, not a glob: the version contains '~' (0.0.1~alpha.1) and the
+          # shell tilde-expands inside an unquoted glob, so 'ls packages/*_arm64.deb'
+          # reports no such file even though it is right there.
+          deb="$(find packages -name "*_${HOST_DEB_ARM}.deb" | head -1)"
           echo "installing $deb on $(uname -m)"
           sudo dpkg -i "$deb"
           command -v shipyard
