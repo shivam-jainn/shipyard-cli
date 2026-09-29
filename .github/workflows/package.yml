@@ -49,8 +49,14 @@ jobs:
         run: |
           set -euo pipefail
           NFPM=v2.41.3
+          # uname -m reports aarch64, but goreleaser names the asset arm64.
+          case "$(uname -m)" in
+            x86_64|amd64) ASSET_ARCH=x86_64 ;;
+            aarch64|arm64) ASSET_ARCH=arm64 ;;
+            *) echo "::error::unsupported arch $(uname -m)"; exit 1 ;;
+          esac
           curl -sfL -o nfpm.tgz \
-            "https://github.com/goreleaser/nfpm/releases/download/${NFPM}/nfpm_${NFPM}_Linux_$(uname -m).tar.gz"
+            "https://github.com/goreleaser/nfpm/releases/download/${NFPM}/nfpm_${NFPM}_Linux_${ASSET_ARCH}.tar.gz"
           tar xzf nfpm.tgz nfpm
           sudo install -m755 nfpm /usr/local/bin/nfpm
           rm nfpm.tgz
@@ -63,12 +69,27 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p tarballs stage
-          gh release download "$TAG" --pattern "shipyard-${TAG}-linux-*.tar.gz" --dir tarballs
+          # The Linux runner has no gh CLI, so resolve asset URLs from the
+          # releases API with curl + python3. Keeps the runner dependency-free,
+          # which also matters for a Pi.
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -o assets.json \
+               "https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG}"
           for arch in amd64 arm64; do
-            f="tarballs/shipyard-${TAG}-linux-${arch}.tar.gz"
-            [ -f "$f" ] || { echo "::error::missing $f"; exit 1; }
+            name="shipyard-${TAG}-linux-${arch}.tar.gz"
+            url="$(python3 - assets.json "$name" <<'PY'
+          import json, sys
+          data = json.load(open(sys.argv[1]))
+          for a in data["assets"]:
+              if a["name"] == sys.argv[2]:
+                  print(a["browser_download_url"])
+                  break
+          else:
+              sys.exit("asset not found: " + sys.argv[2])
+          PY
+          )"
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -o "tarballs/$name" "$url"
             mkdir -p "stage/$arch"
-            tar xzf "$f" -C "stage/$arch"
+            tar xzf "tarballs/$name" -C "stage/$arch"
             echo "== $arch"; file "stage/$arch/shipyard"
           done
 
@@ -169,10 +190,23 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p src
-          gh release download "$TAG" \
-            --pattern "shipyard-${TAG}-darwin-arm64.tar.gz" \
-            --pattern "shipyard-${TAG}-darwin-amd64.tar.gz" \
-            --dir src
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -o assets.json \
+               "https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG}"
+          for a in arm64 amd64; do
+            name="shipyard-${TAG}-darwin-${a}.tar.gz"
+            url="$(python3 - assets.json "$name" <<'PY'
+          import json, sys
+          data = json.load(open(sys.argv[1]))
+          for asset in data["assets"]:
+              if asset["name"] == sys.argv[2]:
+                  print(asset["browser_download_url"])
+                  break
+          else:
+              sys.exit("asset not found: " + sys.argv[2])
+          PY
+          )"
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -o "src/$name" "$url"
+          done
           ls -la src
 
       - name: Generate and verify the formula
