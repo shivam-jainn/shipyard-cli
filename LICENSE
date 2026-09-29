@@ -1,98 +1,101 @@
-SHIPYARD PROPRIETARY SOFTWARE LICENSE AGREEMENT
+SHIPYARD SOURCE-AVAILABLE LICENSE
 
 Copyright (c) 2026 Shivam Jain. All rights reserved.
 
-NOTICE: This software and its source code are the confidential and
-proprietary property of Shivam Jain (the "Licensor"). This software is
-NOT open source and is NOT licensed under any open source license,
-including the Apache License, MIT License, BSD licenses, or GNU General
-Public License.
+NOTICE: This is a source-available license, not an open source license. The
+Software is publicly readable but is NOT licensed under the Apache License,
+MIT License, BSD licenses, the GNU General Public License, or any other OSI
+approved license. You do not receive the rights those licenses grant.
 
 1. OWNERSHIP
 
-   This software, including all source code, object code, binaries,
-   build scripts, configuration files, documentation, designs, and any
-   derivative works thereof (collectively, the "Software"), is and
-   remains the sole and exclusive property of the Licensor. All rights
-   not expressly granted herein are reserved by the Licensor.
+   The Software, including all source code, object code, binaries, build
+   scripts, configuration files, documentation, and design, is and remains
+   the sole and exclusive property of the Licensor. All rights not
+   expressly granted in this Agreement are reserved.
 
-2. NO COPYING, REDISTRIBUTION, OR PUBLIC LICENSING
+2. WHAT YOU MAY DO
 
-   You may NOT, without prior written authorization from the Licensor:
+   You may, for any purpose, including commercial purposes and internal use
+   at a company of any size:
 
-   a. Copy, reproduce, or duplicate the Software, in whole or in part,
-      by any means, whether in source code, object code, binary form,
-      or any other representation;
+     a. Read, study, and inspect the source code.
 
-   b. Redistribute, republish, sublicense, sell, rent, lease, lend, or
-      otherwise transfer or make available the Software to any third
-      party, whether modified or unmodified;
+     b. Use the Software, unmodified, in your own products, services, and
+        internal tooling, including commercially.
 
-   c. Publish, fork, mirror, or upload the Software, or any portion of
-      it, to any public repository, package registry, code hosting
-      service, or third-party service;
+     c. Run the Software on your own infrastructure, including in CI/CD
+        pipelines, for evaluation, testing, and quality gates.
 
-   d. Create or distribute derivative works, adaptations,
-      translations, or modified copies of the Software;
+     d. Contribute changes back to the project via pull request.
 
-   e. Remove, alter, obscure, or circumvent any copyright, trademark,
-      attribution, proprietary-rights, or license notices contained in
-      the Software;
+   Commercial use of the unmodified Software is expressly permitted. Nothing
+   in this Agreement requires you to disclose your business, your revenue,
+   or your customers.
 
-   f. Reverse engineer, decompile, or disassemble the Software except
-      to the extent such restriction is prohibited by applicable law.
+3. WHAT YOU MAY NOT DO
 
-3. NO LICENSE GRANTED
+   Without the Licensor's prior written permission, you may not:
 
-   No license, express or implied, is granted to any party to use,
-   copy, modify, or distribute the Software except as expressly stated
-   in a separate written agreement signed by the Licensor. Possession of
-   a copy of the Software does not grant any rights in it.
+     a. Host, operate, or offer the Software itself as a hosted, managed, or
+        SaaS product, whether modified or unmodified, whether paid or free.
 
-4. CONFIDENTIALITY
+     b. Sell, license, sublicense, or rent the Software as a standalone
+        product or as the primary value of a product offering.
 
-   The Software is confidential information. You shall not disclose,
-   publish, or communicate the Software, or any part of it or any
-   information regarding it, to any third party. This obligation
-   survives termination of any agreement between you and the Licensor.
+     c. Publish a fork, mirror, or derivative work of the Software to any
+        public repository, package registry, or code hosting service.
 
-5. TERMINATION
+     d. Distribute the Software, in original or modified form, other than as
+        described in section 2.
 
-   Any license or permission granted to you, whether written or
-   implied, terminates automatically and without notice upon any breach
-   of this Agreement. Upon termination you must immediately cease all
-   use of the Software and permanently delete all copies in your
-   possession or control.
+   A fork or derivative intended only for internal use, and never hosted for
+   third parties, does not require permission.
 
-6. DISCLAIMER OF WARRANTY
+4. TRADEMARKS
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
-   THE LICENSOR MAKES NO WARRANTY THAT THE SOFTWARE WILL BE ERROR-FREE
-   OR UNINTERRUPTED.
+   "Shipyard" and the anchor logo are trademarks of the Licensor. This
+   Agreement grants no trademark rights. Do not use them to describe a
+   product that is not the Software, or in a way that suggests endorsement.
+
+5. CONTRIBUTION
+
+   If you contribute changes, you grant the Licensor a perpetual,
+   irrevocable, worldwide, royalty-free, sublicensable license to use,
+   modify, and distribute those contributions as part of the Software. You
+   retain copyright in your contributions. Contributions are provided
+   "as is", without warranty of any kind.
+
+6. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND
+   NONINFRINGEMENT.
 
 7. LIMITATION OF LIABILITY
 
-   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
-   THE LICENSOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES
-   WHATSOEVER RESULTING FROM LOSS OF USE, DATA, OR PROFITS, ARISING IN
-   ANY WAY OUT OF THE USE OR INABILITY TO USE THE SOFTWARE, REGARDLESS
-   OF WHETHER SUCH DAMAGES WERE FORESEEABLE AND REGARDLESS OF THE
-   ADVISORY OF THE POSSIBILITY OF SUCH DAMAGES.
+   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE
+   LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER
+   IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR
+   IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
 
-8. GOVERNING LAW
+8. TERMINATION
 
-   This Agreement shall be governed by and construed in accordance with
-   the laws of India, without regard to its conflict of laws principles.
-   Any dispute arising from this Agreement shall be resolved exclusively
-   in the courts located in Bengaluru, Karnataka, India.
+   This Agreement terminates automatically if you breach it. On
+   termination, you must stop using and distributing the Software, except
+   that internal use under section 2(c) may continue for historical
+   pipeline records.
 
-9. ENTIRE AGREEMENT
+9. GOVERNING LAW
 
-   This Agreement constitutes the entire agreement between the parties
-   with respect to the Software and supersedes all prior or
-   contemporaneous understandings, whether written or oral.
+   This Agreement is governed by the laws applicable at the Licensor's
+   principal place of business, without regard to conflict of law
+   provisions. Courts there have exclusive jurisdiction.
 
-For licensing inquiries, contact: shivamjain.dev@gmail.com
+10. ENTIRE AGREEMENT
+
+    This Agreement is the entire agreement between the parties regarding
+    the Software and supersedes all prior agreements. If any provision is
+    unenforceable, the remainder stays in effect.

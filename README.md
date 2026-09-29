@@ -7,23 +7,23 @@
 <p align="center">
   <a href="https://github.com/shivam-jainn/shipyard-cli/actions"><img src="https://img.shields.io/badge/build-passing-brightgreen.svg" alt="Build Status"></a>
   <a href="https://golang.org"><img src="https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go" alt="Go Version"></a>
-  <a href="https://github.com/shivam-jainn/shipyard-web"><img src="https://img.shields.io/badge/docs-shipyard--web-black.svg" alt="Documentation"></a>
-  <a href="https://github.com/shivam-jainn/shipyard-cli/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-red.svg" alt="License: Proprietary"></a>
+  <a href="https://github.com/shivam-jainn/shipyard-cli/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Shipyard%20(source--available)-blue.svg" alt="License: Shipyard source-available"></a>
 </p>
 
 ---
 
 ## Repository Role
 
-This repository is the **command-line binary only**. The evaluation engine lives in [`shipyard-core`](https://github.com/shivam-jainn/shipyard-core) and is consumed as a Go module dependency.
+This repository is the **command-line binary**: the `shipyard` binary, its
+commands, and the release pipeline. The evaluation engine is a private
+module dependency, which is why this project is distributed as signed
+artifacts rather than built from source (see
+[Why you cannot go install this](#why-you-cannot-go-install-this)).
 
-| Repository | Role |
-| :--- | :--- |
-| [`shipyard-core`](https://github.com/shivam-jainn/shipyard-core) | Evaluation engine, agent plugins, sandboxes, ATIF capture, rubrics. Go library. |
-| **`shipyard-cli`** (this repo) | The `shipyard` binary, cobra commands, and release pipeline. |
-| [`shipyard-web`](https://github.com/shivam-jainn/shipyard-web) | Documentation site and marketing pages. |
-| [`shipyard-ci`](https://github.com/shivam-jainn/shipyard-ci) | CI/CD integrations that gate evals in your pipelines. |
-| [`shipyard-registry`](https://github.com/shivam-jainn/shipyard-registry) | Prebuilt evalsets and reference agents. |
+| Repository | Visibility | Role |
+| :--- | :--- | :--- |
+| **`shipyard-cli`** (this repo) | public | The `shipyard` binary, commands, and release pipeline. |
+| [`shipyard-ci`](https://github.com/shivam-jainn/shipyard-ci) | public | Reusable CI templates that gate evals in GitHub Actions, Argo, Jenkins, and GitLab. |
 
 ---
 
