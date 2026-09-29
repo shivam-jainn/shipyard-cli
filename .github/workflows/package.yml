@@ -129,20 +129,25 @@ jobs:
           set -euo pipefail
           fail=0
           n=0
+          # Match without `grep -q`: it exits on first match, the producer
+          # takes SIGPIPE, and `set -o pipefail` turns that into a false
+          # failure (exit 141). Capture the listing first, then grep it.
+          has() { grep -qE "$2" <<<"$1"; }
+
           for deb in packages/*.deb; do
             n=$((n+1))
-            dpkg-deb -I "$deb" >/dev/null || { echo "FAIL control: $deb"; fail=1; }
-            dpkg-deb -c "$deb" | grep -qE 'usr/local/bin/shipyard' || { echo "FAIL contents: $deb"; fail=1; }
+            listing="$(dpkg-deb -c "$deb")" || { echo "FAIL unreadable: $deb"; fail=1; continue; }
+            has "$listing" 'usr/local/bin/shipyard' || { echo "FAIL contents: $deb"; fail=1; }
           done
           for rpm in packages/*.rpm; do
             n=$((n+1))
-            rpm -qip "$rpm" >/dev/null || { echo "FAIL unreadable: $rpm"; fail=1; }
-            rpm -qlp "$rpm" | grep -qE 'usr/bin/shipyard' || { echo "FAIL contents: $rpm"; fail=1; }
+            listing="$(rpm -qlp "$rpm" 2>/dev/null)" || { echo "FAIL unreadable: $rpm"; fail=1; continue; }
+            has "$listing" 'usr/bin/shipyard' || { echo "FAIL contents: $rpm"; fail=1; }
           done
           for pkg in packages/*.pkg.tar.zst; do
             n=$((n+1))
-            zstd -dc "$pkg" 2>/dev/null | tar tf - 2>/dev/null | grep -q 'usr/bin/shipyard' \
-              || { echo "FAIL contents: $pkg"; fail=1; }
+            listing="$(zstd -dc "$pkg" 2>/dev/null | tar tf - 2>/dev/null)" || { echo "FAIL unreadable: $pkg"; fail=1; continue; }
+            has "$listing" 'usr/bin/shipyard' || { echo "FAIL contents: $pkg"; fail=1; }
           done
           echo "verified $n packages"
           exit $fail
