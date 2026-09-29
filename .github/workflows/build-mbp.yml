@@ -27,6 +27,19 @@ jobs:
     name: Verify
     runs-on: [ self-hosted, mbp ]
     steps:
+      # actions/checkout writes the deploy key and known_hosts into RUNNER_TEMP
+      # and exports GIT_SSH_COMMAND for the rest of the job. The engine checkout
+      # (which uses the key) then leaks that into the *CLI* checkout, which is
+      # HTTPS and does not need it, and the stale _known_hosts makes it fail with
+      # 'Host key verification failed'. Populating a stable known_hosts up front
+      # removes the ordering dependency entirely.
+      - name: Set up known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Checkout CLI
         uses: actions/checkout@v4
 
@@ -86,6 +99,19 @@ jobs:
           - { goos: darwin,  goarch: amd64 }
           - { goos: darwin,  goarch: arm64 }
     steps:
+      # actions/checkout writes the deploy key and known_hosts into RUNNER_TEMP
+      # and exports GIT_SSH_COMMAND for the rest of the job. The engine checkout
+      # (which uses the key) then leaks that into the *CLI* checkout, which is
+      # HTTPS and does not need it, and the stale _known_hosts makes it fail with
+      # 'Host key verification failed'. Populating a stable known_hosts up front
+      # removes the ordering dependency entirely.
+      - name: Set up known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Checkout CLI
         uses: actions/checkout@v4
 
