@@ -186,6 +186,7 @@ jobs:
           VERSION: ${{ needs.classify.outputs.version }}
           TAG: ${{ needs.classify.outputs.tag }}
           COMMIT: ${{ needs.classify.outputs.commit_sha }}
+          CHANNEL: ${{ needs.classify.outputs.channel }}
         run: |
           set -euo pipefail
           mkdir -p dist
@@ -197,7 +198,8 @@ jobs:
           CGO_ENABLED=0 go build -trimpath -mod=readonly \
             -ldflags="-s -w -buildid= \
               -X 'github.com/shivam-jainn/shipyard-cli/cmd/cmdline.Version=${VERSION}' \
-              -X 'github.com/shivam-jainn/shipyard-cli/cmd/cmdline.Commit=${COMMIT}'" \
+              -X 'github.com/shivam-jainn/shipyard-cli/cmd/cmdline.Commit=${COMMIT}' \
+              -X 'github.com/shivam-jainn/shipyard-cli/cmd/cmdline.Channel=${CHANNEL}'" \
             -o "dist/${ARTIFACT_BIN}" ./cmd/shipyard/main.go
 
           NAME="${ARTIFACT_BIN}-${TAG}-${GOOS}-${GOARCH}"
