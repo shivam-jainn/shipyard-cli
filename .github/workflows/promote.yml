@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release, e.g. 0.1.0 (blank = derive from VERSION file)'
+        description: 'Version to release, e.g. 0.0.1 (blank = derive from VERSION file)'
         required: false
       dry_run:
         description: 'Open the PR but do not merge'

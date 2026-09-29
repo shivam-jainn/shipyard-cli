@@ -10,12 +10,12 @@
 #   curl -fsSL https://raw.githubusercontent.com/shivam-jainn/shipyard-cli/main/install.sh | sh
 #
 # Channels:
-#   stable (default)  latest non-prerelease          v0.1.0
-#   test              latest alpha/rc prerelease     v0.1.0-rc.1
-#   dev               latest development build        v0.0.0-dev.42
+#   stable (default)  latest non-prerelease          v0.0.1
+#   test              latest alpha/beta/rc prerelease v0.0.1-alpha.1
+#   dev               latest development build        v0.0.1-dev.42
 #
 # Usage:
-#   install.sh [--channel stable|test|dev] [--version v0.1.0]
+#   install.sh [--channel stable|test|dev] [--version v0.0.1]
 #              [--install-dir DIR] [--yes] [--dry-run] [--uninstall]
 #
 # Environment:
@@ -39,7 +39,7 @@ UNINSTALL="0"
 
 log()  { printf '%s\n' "$*" >&2; }
 info() { printf '  %s\n' "$*" >&2; }
-die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
+die()  { printf 'error: %s\n' "$1" >&2; exit 1; }
 
 usage() {
   sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//'
@@ -132,19 +132,33 @@ resolve_version() {
   fi
 
   # Fallback for the stable channel only: GitHub's "latest" endpoint already
-  # excludes drafts and prereleases, so it needs no parsing.
+  # excludes drafts and prereleases, so it needs no parsing. The trailing `||`
+  # keeps `set -e` from aborting the assignment when the endpoint 404s, which
+  # would otherwise skip the diagnostic below and exit with a bare code 56.
   if [ -z "$tag" ] && [ "$CHANNEL" = "stable" ]; then
     log "channel manifest unavailable, falling back to the latest release"
     tag="$(curl -fsSL --max-time 30 \
           -H 'Accept: application/vnd.github+json' \
           "${GITHUB_API}/repos/${REPO}/releases/latest" 2>/dev/null \
         | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
-        | head -n1)"
+        | head -n1 || true)"
   fi
 
-  [ -n "$tag" ] || die "could not resolve the '$CHANNEL' channel for $REPO.
+  if [ -z "$tag" ]; then
+    if [ "$CHANNEL" = "stable" ]; then
+      die "no stable release found for $REPO.
+
+  Every published release so far is a prerelease, and GitHub's 'latest'
+  endpoint does not consider prereleases. Install the test channel instead:
+
+    curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | sh -s -- --channel test
+
+  or pin an exact version with --version v<MAJOR.MINOR.PATCH>."
+    fi
+    die "could not resolve the '$CHANNEL' channel for $REPO.
 The dist channel manifest may not be published yet, or no release exists
 on this channel. Publish a release, or pin explicitly with --version."
+  fi
   printf '%s' "$tag"
 }
 
