@@ -57,6 +57,17 @@ jobs:
       allowed_branch: ${{ steps.meta.outputs.allowed_branch }}
       commit_sha: ${{ steps.meta.outputs.commit_sha }}
     steps:
+      # See build-mbp.yml: the engine checkout exports GIT_SSH_COMMAND for the
+      # whole job, which then leaks into the HTTPS CLI checkout and fails with
+      # 'Host key verification failed'. A stable known_hosts avoids the
+      # ordering dependency.
+      - name: Set up known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Checkout CLI
         uses: actions/checkout@v4
         with:
@@ -128,6 +139,17 @@ jobs:
           - { goos: darwin,  goarch: amd64 }
           - { goos: darwin,  goarch: arm64 }
     steps:
+      # See build-mbp.yml: the engine checkout exports GIT_SSH_COMMAND for the
+      # whole job, which then leaks into the HTTPS CLI checkout and fails with
+      # 'Host key verification failed'. A stable known_hosts avoids the
+      # ordering dependency.
+      - name: Set up known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Checkout CLI
         uses: actions/checkout@v4
         with:
@@ -302,6 +324,17 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
+      # See build-mbp.yml: the engine checkout exports GIT_SSH_COMMAND for the
+      # whole job, which then leaks into the HTTPS CLI checkout and fails with
+      # 'Host key verification failed'. A stable known_hosts avoids the
+      # ordering dependency.
+      - name: Set up known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Checkout CLI
         uses: actions/checkout@v4
         with:
@@ -392,6 +425,17 @@ jobs:
     needs: [ classify, package, publish ]
     runs-on: ubuntu-latest
     steps:
+      # See build-mbp.yml: the engine checkout exports GIT_SSH_COMMAND for the
+      # whole job, which then leaks into the HTTPS CLI checkout and fails with
+      # 'Host key verification failed'. A stable known_hosts avoids the
+      # ordering dependency.
+      - name: Set up known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Checkout CLI
         uses: actions/checkout@v4
         with:

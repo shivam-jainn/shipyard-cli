@@ -27,6 +27,19 @@ jobs:
     name: Verify
     runs-on: [ self-hosted, mbp ]
     steps:
+      # actions/checkout writes the deploy key and known_hosts into RUNNER_TEMP
+      # and exports GIT_SSH_COMMAND for the rest of the job. The engine checkout
+      # (which uses the key) then leaks that into the *CLI* checkout, which is
+      # HTTPS and does not need it, and the stale _known_hosts makes it fail with
+      # 'Host key verification failed'. Populating a stable known_hosts up front
+      # removes the ordering dependency entirely.
+      - name: Set up known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Checkout CLI
         uses: actions/checkout@v4
 
@@ -39,6 +52,15 @@ jobs:
           repository: shivam-jainn/shipyard-core
           path: shipyard-core
           ssh-key: ${{ secrets.CORE_SSH_KEY }}
+          # The runner's known_hosts is reset between jobs, so strict checking
+          # fails with 'Host key verification failed'. checkout populates the
+          # host key itself via ssh-keyscan.
+          ssh-strict: false
+          # The SSH fetch over the home network intermittently stalls and hits
+          # the action's own ~50s timeout ("The operation was canceled"). The
+          # repo is ~200KB, so retrying is cheap and effective.
+          retry: 3
+          retry-wait-seconds: 10
 
       - name: Move engine to sibling directory
         run: |
@@ -46,6 +68,16 @@ jobs:
           rm -rf "$GITHUB_WORKSPACE/../shipyard-core"
           mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
           echo "engine at $(cd "$GITHUB_WORKSPACE/../shipyard-core" && pwd)"
+
+      # Must run before setup-go: that step's cache restore extracts into
+      # GOMODCACHE. Unset, it resolves to the developer's real ~/go/pkg/mod
+      # (3.2GB) and the restore fails with
+      #   Can't unlink already-existing object: Permission denied
+      - name: Isolate the Go module cache
+        run: |
+          mkdir -p "$RUNNER_TEMP/gomodcache" "$RUNNER_TEMP/gocache"
+          echo "GOMODCACHE=$RUNNER_TEMP/gomodcache" >> "$GITHUB_ENV"
+          echo "GOCACHE=$RUNNER_TEMP/gocache" >> "$GITHUB_ENV"
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -82,6 +114,19 @@ jobs:
           - { goos: darwin,  goarch: amd64 }
           - { goos: darwin,  goarch: arm64 }
     steps:
+      # actions/checkout writes the deploy key and known_hosts into RUNNER_TEMP
+      # and exports GIT_SSH_COMMAND for the rest of the job. The engine checkout
+      # (which uses the key) then leaks that into the *CLI* checkout, which is
+      # HTTPS and does not need it, and the stale _known_hosts makes it fail with
+      # 'Host key verification failed'. Populating a stable known_hosts up front
+      # removes the ordering dependency entirely.
+      - name: Set up known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Checkout CLI
         uses: actions/checkout@v4
 
@@ -91,6 +136,15 @@ jobs:
           repository: shivam-jainn/shipyard-core
           path: shipyard-core
           ssh-key: ${{ secrets.CORE_SSH_KEY }}
+          # The runner's known_hosts is reset between jobs, so strict checking
+          # fails with 'Host key verification failed'. checkout populates the
+          # host key itself via ssh-keyscan.
+          ssh-strict: false
+          # The SSH fetch over the home network intermittently stalls and hits
+          # the action's own ~50s timeout ("The operation was canceled"). The
+          # repo is ~200KB, so retrying is cheap and effective.
+          retry: 3
+          retry-wait-seconds: 10
 
       - name: Move engine to sibling directory
         run: |
@@ -98,6 +152,16 @@ jobs:
           rm -rf "$GITHUB_WORKSPACE/../shipyard-core"
           mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
           echo "engine at $(cd "$GITHUB_WORKSPACE/../shipyard-core" && pwd)"
+
+      # Must run before setup-go: that step's cache restore extracts into
+      # GOMODCACHE. Unset, it resolves to the developer's real ~/go/pkg/mod
+      # (3.2GB) and the restore fails with
+      #   Can't unlink already-existing object: Permission denied
+      - name: Isolate the Go module cache
+        run: |
+          mkdir -p "$RUNNER_TEMP/gomodcache" "$RUNNER_TEMP/gocache"
+          echo "GOMODCACHE=$RUNNER_TEMP/gomodcache" >> "$GITHUB_ENV"
+          echo "GOCACHE=$RUNNER_TEMP/gocache" >> "$GITHUB_ENV"
 
       - name: Set up Go
         uses: actions/setup-go@v5
