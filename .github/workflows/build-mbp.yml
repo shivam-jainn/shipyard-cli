@@ -39,6 +39,10 @@ jobs:
           repository: shivam-jainn/shipyard-core
           path: shipyard-core
           ssh-key: ${{ secrets.CORE_SSH_KEY }}
+          # The runner's known_hosts is reset between jobs, so strict checking
+          # fails with 'Host key verification failed'. checkout populates the
+          # host key itself via ssh-keyscan.
+          ssh-strict: false
 
       - name: Move engine to sibling directory
         run: |
@@ -91,6 +95,10 @@ jobs:
           repository: shivam-jainn/shipyard-core
           path: shipyard-core
           ssh-key: ${{ secrets.CORE_SSH_KEY }}
+          # The runner's known_hosts is reset between jobs, so strict checking
+          # fails with 'Host key verification failed'. checkout populates the
+          # host key itself via ssh-keyscan.
+          ssh-strict: false
 
       - name: Move engine to sibling directory
         run: |
