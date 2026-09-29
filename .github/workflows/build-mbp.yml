@@ -69,6 +69,16 @@ jobs:
           mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
           echo "engine at $(cd "$GITHUB_WORKSPACE/../shipyard-core" && pwd)"
 
+      # Must run before setup-go: that step's cache restore extracts into
+      # GOMODCACHE. Unset, it resolves to the developer's real ~/go/pkg/mod
+      # (3.2GB) and the restore fails with
+      #   Can't unlink already-existing object: Permission denied
+      - name: Isolate the Go module cache
+        run: |
+          mkdir -p "$RUNNER_TEMP/gomodcache" "$RUNNER_TEMP/gocache"
+          echo "GOMODCACHE=$RUNNER_TEMP/gomodcache" >> "$GITHUB_ENV"
+          echo "GOCACHE=$RUNNER_TEMP/gocache" >> "$GITHUB_ENV"
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -142,6 +152,16 @@ jobs:
           rm -rf "$GITHUB_WORKSPACE/../shipyard-core"
           mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
           echo "engine at $(cd "$GITHUB_WORKSPACE/../shipyard-core" && pwd)"
+
+      # Must run before setup-go: that step's cache restore extracts into
+      # GOMODCACHE. Unset, it resolves to the developer's real ~/go/pkg/mod
+      # (3.2GB) and the restore fails with
+      #   Can't unlink already-existing object: Permission denied
+      - name: Isolate the Go module cache
+        run: |
+          mkdir -p "$RUNNER_TEMP/gomodcache" "$RUNNER_TEMP/gocache"
+          echo "GOMODCACHE=$RUNNER_TEMP/gomodcache" >> "$GITHUB_ENV"
+          echo "GOCACHE=$RUNNER_TEMP/gocache" >> "$GITHUB_ENV"
 
       - name: Set up Go
         uses: actions/setup-go@v5
