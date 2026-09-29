@@ -156,15 +156,19 @@ jobs:
       - name: Install-test the deb
         run: |
           set -euo pipefail
-          deb="$(ls packages/*amd64.deb | head -1)"
-          echo "installing $deb"
+          # Install the deb matching the runner's own architecture; dpkg
+          # refuses a foreign-arch package, and a Pi/arm64 runner would fail
+          # an amd64-only install test.
+          case "$(uname -m)" in
+            x86_64) HOST_DEB_AMD=amd64; HOST_DEB_ARM=amd64 ;;
+            aarch64|arm64) HOST_DEB_AMD=arm64; HOST_DEB_ARM=arm64 ;;
+            *) echo "::error::unsupported runner arch $(uname -m)"; exit 1 ;;
+          esac
+          deb="$(ls "packages/*_${HOST_DEB_ARM}.deb" | head -1)"
+          echo "installing $deb on $(uname -m)"
           sudo dpkg -i "$deb"
           command -v shipyard
-          if [ "$(uname -m)" = "x86_64" ]; then
-            shipyard version
-          else
-            echo "::notice::amd64 deb on an arm64 host; skipping exec test"
-          fi
+          shipyard version
           sudo dpkg -r shipyard
           echo "install/uninstall OK"
 
