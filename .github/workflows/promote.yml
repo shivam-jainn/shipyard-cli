@@ -1,0 +1,113 @@
+name: Promote
+
+# Ships what has accumulated on develop into production on main.
+#
+# Opens a release pull request and, once CI is green, merges it. From there a
+# v* tag on main produces a stable release through the Release workflow.
+#
+# Run it with:  gh workflow run promote.yml --repo shivam-jainn/shipyard-cli
+#
+# The version to release is taken from VERSION in this repository, so bump it
+# on develop (or let the workflow default to a patch bump) before promoting.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, e.g. 0.0.1 (blank = derive from VERSION file)'
+        required: false
+      dry_run:
+        description: 'Open the PR but do not merge'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: promote
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Promote develop to main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout CLI
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate branches
+        run: |
+          set -euo pipefail
+          git fetch origin main develop
+          if [ -z "$(git rev-parse origin/main)" ]; then
+            echo "::error::main does not exist"; exit 1
+          fi
+          echo "main:    $(git rev-parse --short origin/main)"
+          echo "develop: $(git rev-parse --short origin/develop)"
+
+      - name: Open the release pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+
+          VERSION="$VERSION"
+          if [ -z "$VERSION" ]; then
+            if [ -f VERSION ]; then
+              VERSION="$(tr -d '[:space:]' < VERSION)"
+            fi
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "::error::no version given and no VERSION file found"
+            exit 1
+          fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$VERSION' is not a stable SemVer version (MAJOR.MINOR.PATCH)"
+            exit 1
+          fi
+
+          TITLE="release: v${VERSION}"
+          BODY="Promotes \`develop\` to \`main\` for **v${VERSION}**.
+
+          After merge, tag and push \`v${VERSION}\` to publish the stable release:
+          \`\`\`
+          git checkout main
+          git tag v${VERSION}
+          git push origin v${VERSION}
+          \`\`\`"
+
+          # An existing open release PR means a promote is already in flight.
+          EXISTING="$(gh pr list --base main --head develop --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$EXISTING" ]; then
+            echo "::notice::release PR #$EXISTING is already open"
+            echo "number=$EXISTING" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          URL="$(gh pr create \
+            --base main \
+            --head develop \
+            --title "$TITLE" \
+            --body "$BODY" \
+            --label release 2>/dev/null || gh pr create \
+            --base main --head develop --title "$TITLE" --body "$BODY")"
+          echo "created $URL"
+          echo "number=$(gh pr view "$URL" --json number --jq .number)" >> "$GITHUB_OUTPUT"
+          echo "::notice::opened $URL"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "::notice::dry run, not merging"
+            exit 0
+          fi
+
+          # Wait for checks, then merge. --auto lets GitHub squash-merge as
+          # soon as the required checks pass.
+          gh pr merge "$URL" --squash --auto --delete-branch
+          echo "::notice::merge queued; it lands once required checks pass"

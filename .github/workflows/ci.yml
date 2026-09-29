@@ -1,0 +1,203 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    # Forks receive no secrets, so the private engine cannot be fetched.
+    # Skipped there rather than red.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      # See build-mbp.yml: the engine checkout exports GIT_SSH_COMMAND for the
+      # whole job, which then leaks into the HTTPS CLI checkout and fails with
+      # 'Host key verification failed'. A stable known_hosts avoids the
+      # ordering dependency.
+      - name: Set up known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Checkout CLI
+        uses: actions/checkout@v4
+
+      # The evaluation engine lives in the private shipyard-core repo and is
+      # wired in through a filesystem `replace` directive, so it must be
+      # checked out as a sibling of this repository for the module to resolve.
+      - name: Checkout Engine (shipyard-core)
+        uses: actions/checkout@v4
+        with:
+          repository: shivam-jainn/shipyard-core
+          # GITHUB_TOKEN is scoped to this repository and cannot read the
+          # private engine, so a read-only deploy key is used instead of a PAT.
+          # Forks do not receive secrets, hence the empty-string fallback.
+          ssh-key: ${{ secrets.CORE_SSH_KEY }}
+          ssh-strict: false
+          path: shipyard-core
+
+      # actions/checkout cannot write outside the workspace, so the engine is
+      # moved up to the sibling path that the go.mod `replace` directive needs.
+      - name: Move engine to sibling directory
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/../shipyard-core"
+          mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.8'
+          cache: true
+          cache-dependency-path: |
+            go.sum
+
+      - name: Download dependencies
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Check formatting
+        run: |
+          unformatted="$(gofmt -l . 2>/dev/null || true)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt needed on:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      # ubuntu-latest ships a working Docker daemon, so the pkg/engine
+      # integration tests run here even though they cannot run on a laptop
+      # without Docker.
+      - name: Test
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.run_id }}
+          path: coverage.out
+          retention-days: 7
+
+  cross-compile:
+    name: Cross-compile ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { goos: linux,   goarch: amd64 }
+          - { goos: linux,   goarch: arm64 }
+          - { goos: darwin,  goarch: amd64 }
+          - { goos: darwin,  goarch: arm64 }
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+    steps:
+      # See build-mbp.yml: the engine checkout exports GIT_SSH_COMMAND for the
+      # whole job, which then leaks into the HTTPS CLI checkout and fails with
+      # 'Host key verification failed'. A stable known_hosts avoids the
+      # ordering dependency.
+      - name: Set up known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Checkout CLI
+        uses: actions/checkout@v4
+
+      - name: Checkout Engine (shipyard-core)
+        uses: actions/checkout@v4
+        with:
+          repository: shivam-jainn/shipyard-core
+          # GITHUB_TOKEN is scoped to this repository and cannot read the
+          # private engine, so a read-only deploy key is used instead of a PAT.
+          # Forks do not receive secrets, hence the empty-string fallback.
+          ssh-key: ${{ secrets.CORE_SSH_KEY }}
+          ssh-strict: false
+          path: shipyard-core
+
+      - name: Move engine to sibling directory
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/../shipyard-core"
+          mv shipyard-core "$GITHUB_WORKSPACE/../shipyard-core"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.8'
+
+      # GOOS/GOARCH are job-level so the smoke test below can see them; as
+      # step-level env they were empty in that step, resolving the binary to
+      # the literal path ./bin/shipyard--.
+      - name: Build
+        env:
+          VERSION: ci-${{ github.sha }}
+        run: |
+          mkdir -p bin
+          go build -trimpath \
+            -ldflags="-s -w -buildid= -X 'github.com/shivam-jainn/shipyard-cli/cmd/cmdline.Version=${VERSION}'" \
+            -o "bin/shipyard-${GOOS}-${GOARCH}" ./cmd/shipyard/main.go
+
+      - name: Smoke test (native platform only)
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        run: ./bin/shipyard-${{ matrix.goos }}-${{ matrix.goarch }} version
+
+  installer:
+    name: Installer self-test
+    runs-on: ubuntu-latest
+    steps:
+      # See build-mbp.yml: the engine checkout exports GIT_SSH_COMMAND for the
+      # whole job, which then leaks into the HTTPS CLI checkout and fails with
+      # 'Host key verification failed'. A stable known_hosts avoids the
+      # ordering dependency.
+      - name: Set up known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Checkout CLI
+        uses: actions/checkout@v4
+
+      - name: Syntax check
+        run: bash -n install.sh
+
+      - name: Usage and argument validation
+        run: |
+          ./install.sh --help
+          # an unknown channel must fail loudly rather than silently defaulting
+          if ./install.sh --channel bogus; then
+            echo "::error::expected a non-zero exit for an invalid channel"; exit 1
+          fi
+          # a pinned, nonexistent version must fail with a clear message
+          if ./install.sh --version v0.0.0-does-not-exist --dry-run; then
+            echo "::error::expected a non-zero exit for a missing release"; exit 1
+          fi
+
+      - name: Shellcheck
+        if: always()
+        continue-on-error: true
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: .
+          files: install.sh
