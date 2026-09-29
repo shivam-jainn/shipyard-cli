@@ -21,7 +21,7 @@ description: |
   Evaluation harness and execution engine for autonomous AI agents.
 vendor: Shipyard
 homepage: https://github.com/shivam-jainn/shipyard-cli
-license: LicenseRef-Proprietary
+license: LicenseRef-Shipyard
 
 contents:
   - src: ./dist/shipyard

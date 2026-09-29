@@ -80,23 +80,14 @@ when you want an immutable snapshot. Every released CLI binary records the
 engine commit it was built against, so any published artifact traces back to
 an exact engine state.
 
-## Web
-
-`shipyard-web` follows the same channels: pull requests are verified but never
-published, `develop` is staging, `main` is production. See
-[`deploy/README.md`](../shipyard-web/deploy/README.md).
-
 ## What is public
 
 | Repository | Visibility | Why |
 | :--- | :--- | :--- |
 | `shipyard-cli` | public | the distributed binary and its source |
 | `shipyard-ci` | public | the integration templates, useless without the CLI |
-| `shipyard-core` | **private** | the engine |
-| `shipyard-registry` | private | evalsets and reference agents |
-| `shipyard-web` | private | docs and marketing |
 
-Because the CLI's source is public but the engine is private, an outsider who
-clones `shipyard-cli` cannot build it: the engine module is unreachable. That
-is intended. Distribution is through the signed, checksummed release artifacts
-and the container image. See the `LICENSE` in each repository.
+The evaluation engine is a private module dependency. Because the CLI's source
+is public but the engine is not, an outsider who clones `shipyard-cli` cannot
+build it: the engine module is unreachable. That is intended. Distribution is
+through the checksummed release artifacts and the container image.
