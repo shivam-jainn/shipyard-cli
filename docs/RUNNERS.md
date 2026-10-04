@@ -1,12 +1,18 @@
 # Shipyard build runners
 
-Two self-hosted runners, both ARM64, both free (the repository is public, and
-self-hosted runners never consume billed minutes regardless of plan).
+Self-hosted runners are all ARM64 and free (self-hosted runners never consume
+billed minutes regardless of plan).
 
 | Runner | Labels | Host | Builds |
 |---|---|---|---|
 | `shivams-mbp` | `self-hosted, macOS, ARM64, mbp` | MacBook Pro | Go cross-compiles, darwin binaries, Homebrew formula |
-| `shipyard-pi` | `self-hosted, linux, ARM64, pi, linux-build, packaging` | Raspberry Pi 5 (Debian 13) | `.deb`, `.rpm`, Arch packages, install tests |
+| `shipyard-pi` (+`-2`, `-3`) | `self-hosted, linux, ARM64, pi, linux-build, packaging` | Raspberry Pi 5 (Debian 13) | build, vet, test, cross-compile, installer self-test, `.deb`/`.rpm`/Arch, install tests |
+
+`shipyard-cli` gets three instances because a single runner serves **one job at a
+time**, and `ci.yml` has a four-leg `cross-compile` matrix that wants to run in
+parallel. On one instance those legs queue behind each other and every push takes
+several minutes. The extra instances carry identical labels, so GitHub schedules
+whichever is free.
 
 The workflows select on **labels**, never on hostnames, so the Pi picked up the
 packaging work with no workflow edits.
@@ -68,15 +74,20 @@ Installed:
 
 A self-hosted runner belongs to exactly one repository or one organization, and
 these repositories live under a **user** account rather than an organization, so
-there is no account-wide runner to register against. The Pi therefore runs five
-separate runner instances, one per repository:
+there is no account-wide runner to register against. Each repository served by
+the Pi therefore gets its own runner instance.
+
+Only the three repositories whose builds take minutes are on the Pi.
+`shipyard-ci` and `shipyard-registry` each run a single validation job that
+finishes in seconds, so they use `ubuntu-latest` instead; a self-hosted runner
+makes them no faster and would just hold ~135 MB resident while idle.
 
 ```
 ~/actions-runner-shipyard-cli        # labels: ... linux-build, packaging
-~/actions-runner-shipyard-web
+~/actions-runner-shipyard-cli-2      # extra capacity, same labels
+~/actions-runner-shipyard-cli-3      # extra capacity, same labels
 ~/actions-runner-shipyard-core
-~/actions-runner-shipyard-ci
-~/actions-runner-shipyard-registry
+~/actions-runner-shipyard-web
 ```
 
 All five are named `shipyard-pi`, and each is registered with the `pi` label plus
@@ -90,6 +101,33 @@ ssh pi 'systemctl status actions-runner-shipyard-cli'
 ssh pi 'sudo systemctl restart actions-runner-shipyard-web'
 ssh pi 'journalctl -u actions-runner-shipyard-core -f'
 ```
+
+### `PrivateTmp` must stay off
+
+The unit files set `NoNewPrivileges=true` but deliberately **not** `PrivateTmp=true`.
+
+`PrivateTmp=true` gives each job a private `/tmp`. The Docker daemon runs in the
+host namespace and cannot see it, so a container bind-mounting a path under
+`/tmp` gets an **empty directory**. `go test` writes each eval to `t.TempDir()`,
+which is under `/tmp`, so every sandboxed engine test in `shipyard-core` was
+mounting an empty eval directory and failing:
+
+```
+python3: can't open file '/tmp/TestRunSingleEval.../tests/rubric.py':
+[Errno 2] No such file or directory
+```
+
+Reproduced directly — inside a `PrivateTmp=true` unit, a file written to `/tmp`
+is invisible to a container mounting it:
+
+```bash
+ssh pi 'sudo systemd-run --wait --pipe --property=PrivateTmp=true \
+  /bin/sh -c "mkdir -p /tmp/p && echo hi > /tmp/p/f.txt && \
+    docker run --rm -v /tmp/p:/work alpine cat /work/f.txt"'
+# -> cat: /work/f.txt: No such file or directory
+```
+
+If a sandboxed test fails with a missing file under `/tmp`, check this first.
 
 ### Re-registering
 
