@@ -156,9 +156,18 @@ Shipyard publishes to three channels, and the tag alone decides which:
 | `v1.2.3-rc.1` | `test` | prerelease + `:test` image |
 | `v0.0.0-dev.42` | `dev` | prerelease + `:dev` image |
 
-Stable tags must be reachable from `main`; test and dev tags from `develop`.
-The pipeline refuses to publish otherwise, so a release cannot be cut from the
-wrong branch.
+Each channel is cut from its own branch, and the pipeline refuses to publish a
+tag that is not reachable from it:
+
+| Channel | Cut from | Reached by |
+| :--- | :--- | :--- |
+| `dev` | `develop` | pull request, or the automatic dev build on every push |
+| `test` | `staging` | promoting `develop` to `staging` |
+| `stable` | `main` | promoting `staging` to `main`, then tagging |
+
+Code moves up one tier at a time and never skips a level, so nothing reaches
+production without having been through a pre-production environment first. See
+[BRANCHING.md](BRANCHING.md).
 
 Every release cross-compiles for linux and darwin on amd64 and arm64, strips
 symbols and local paths, smoke-tests the linux/amd64 binary, and publishes

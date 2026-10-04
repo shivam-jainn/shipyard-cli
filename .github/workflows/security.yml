@@ -2,9 +2,9 @@ name: Security
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, staging, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, staging, develop ]
 
 permissions:
   contents: read
@@ -15,6 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # CodeQL stays on a GitHub-hosted runner. The analysis bundle is roughly a
+  # gigabyte and self-hosted CodeQL wants its own database directory and disk
+  # headroom, which is a poor trade on a Pi that also runs the test suite.
   codeql:
     name: CodeQL
     runs-on: ubuntu-latest
@@ -46,7 +49,7 @@ jobs:
 
   govulncheck:
     name: govulncheck
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted, linux, ARM64, pi ]
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       # See build-mbp.yml: the engine checkout exports GIT_SSH_COMMAND for the
