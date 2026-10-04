@@ -19,6 +19,9 @@ reproduce it. You can expect an acknowledgement within a few days.
 | test | `v0.0.1-alpha.N`, `-beta.N`, `-rc.N` | Yes, until superseded by stable |
 | dev | `v0.0.1-dev.N` | No, rebuild from `develop` |
 
+Fixes land on `develop` and reach the other channels by promotion, never by
+direct commit. See [BRANCHING.md](BRANCHING.md).
+
 Pre-release tags are published for evaluation. Anything found in them is
 treated as a live issue and fixed on the next patch of the relevant channel.
 
