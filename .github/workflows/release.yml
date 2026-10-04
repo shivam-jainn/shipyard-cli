@@ -1,15 +1,15 @@
 name: Release
 
-# Releases are cut from tags on `main` (stable) and `develop` (test/dev).
-# The tag alone decides the channel and the artifact layout:
+# Releases are cut from tags, and the tag's own suffix decides the channel:
 #
 #   v1.2.3              -> stable   GitHub release + ghcr :latest, :1.2.3, :v1.2.3
 #   v1.2.3-rc.1         -> test     GitHub prerelease   + ghcr :test, :1.2.3-rc.1
 #   v0.0.0-dev.123      -> dev      GitHub prerelease   + ghcr :dev
 #
-# Tag rules (enforced below):
-#   stable tags may only point at commits reachable from main
-#   test/dev tags may only point at commits reachable from develop
+# Tag rules (enforced below), one branch per channel:
+#   stable  v1.2.3          must be reachable from main
+#   test    v1.2.3-rc.1     must be reachable from staging
+#   dev     v0.0.0-dev.123  must be reachable from develop
 #
 # After publishing, the `dist` branch is updated so install.sh can resolve
 # each channel without a JSON parser.
@@ -99,9 +99,12 @@ jobs:
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
           echo "is_stable=$([ "$CHANNEL" = stable ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
-          # stable ships from main, everything else from develop
+          # One tier per channel. This is the mechanism that stops a stable
+          # release being cut from a branch that never went through staging.
           if [ "$CHANNEL" = "stable" ]; then
-            echo "allowed_branch=main" >> "$GITHUB_OUTPUT"
+            echo "allowed_branch=main"    >> "$GITHUB_OUTPUT"
+          elif [ "$CHANNEL" = "test" ]; then
+            echo "allowed_branch=staging" >> "$GITHUB_OUTPUT"
           else
             echo "allowed_branch=develop" >> "$GITHUB_OUTPUT"
           fi
@@ -120,7 +123,8 @@ jobs:
             echo "::notice::$TAG is reachable from '$BRANCH' - policy satisfied"
           else
             echo "::error::$TAG is not on '$BRANCH'."
-            echo "::error::stable releases must be tagged from main; test/dev from develop."
+            echo "::error::stable releases must be tagged from main;"
+            echo "::error::test releases from staging; dev releases from develop."
             exit 1
           fi
 
