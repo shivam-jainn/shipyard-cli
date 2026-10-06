@@ -144,43 +144,6 @@ ssh pi "cd ~/actions-runner-shipyard-cli && ./config.sh --unattended \
   --work _work --no-default-labels --replace"
 ```
 
-## The Lima VM
-
-`shipyard-linux` is also registered to `shipyard-cli` and still holds the
-`linux-build,packaging` labels. It belongs to a Lima VM that is currently
-stopped:
-
-```bash
-limactl list                    # shipyard-build  Stopped
-limactl stop shipyard-build     # stop, keep disk
-limactl delete shipyard-build   # destroy entirely
-```
-
-It is harmless while stopped: GitHub only schedules to runners that are online,
-so jobs go to the Pi. Two runners sharing the `packaging` label is fine, and
-whichever is free takes the job. Delete the registration once the VM is retired:
-
-```bash
-gh api repos/shivam-jainn/shipyard-cli/actions/runners \
-  --jq '.runners[] | select(.name=="shipyard-linux") | .id'
-gh api -X DELETE repos/shivam-jainn/shipyard-cli/actions/runners/<id>
-```
-
-To bring the VM back instead, recreate the runner inside it and re-run the
-registration step above:
-
-```bash
-limactl start --name=shipyard-build --cpus=2 --memory=4 --disk=30
-limactl shell shipyard-build -- bash -c '
-  set -e
-  curl -sL -o /tmp/r.tgz https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-arm64-2.337.0.tar.gz
-  mkdir -p ~/actions-runner && tar xzf /tmp/r.tgz -C ~/actions-runner
-  sudo apt-get install -y -qq zstd
-  curl -sfL -o /tmp/n.tgz https://github.com/goreleaser/nfpm/releases/download/v2.41.3/nfpm_2.41.3_Linux_arm64.tar.gz
-  tar xzf /tmp/n.tgz -C /tmp nfpm && sudo install -m755 /tmp/nfpm /usr/local/bin/nfpm
-'
-```
-
 ## Footprint
 
 The Pi has four cores and 7.9 GiB of RAM, comfortably more than the ~91 MB the
@@ -195,3 +158,4 @@ Build caches grow between runs and are safe to clear when nothing is in flight:
 ```bash
 ssh pi 'rm -rf ~/actions-runner-shipyard-cli/_work/*/src ~/actions-runner-shipyard-cli/_work/*/_temp'
 ```
+
