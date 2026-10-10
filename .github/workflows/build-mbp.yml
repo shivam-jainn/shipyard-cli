@@ -25,7 +25,7 @@ concurrency:
 jobs:
   verify:
     name: Verify
-    runs-on: [ self-hosted, mbp ]
+    runs-on: [ self-hosted, linux, ARM64, pi ]
     steps:
       # actions/checkout writes the deploy key and known_hosts into RUNNER_TEMP
       # and exports GIT_SSH_COMMAND for the rest of the job. The engine checkout
@@ -49,7 +49,7 @@ jobs:
       - name: Checkout Engine (shipyard-core)
         uses: actions/checkout@v4
         with:
-          repository: shivam-jainn/shipyard-core
+          repository: dock-at-the-yards/shipyard-core
           path: shipyard-core
           ssh-key: ${{ secrets.CORE_SSH_KEY }}
           # The runner's known_hosts is reset between jobs, so strict checking
@@ -103,7 +103,7 @@ jobs:
   build:
     name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
     needs: verify
-    runs-on: [ self-hosted, mbp ]
+    runs-on: [ self-hosted, linux, ARM64, pi ]
     strategy:
       fail-fast: false
       matrix:
@@ -132,7 +132,7 @@ jobs:
       - name: Checkout Engine (shipyard-core)
         uses: actions/checkout@v4
         with:
-          repository: shivam-jainn/shipyard-core
+          repository: dock-at-the-yards/shipyard-core
           path: shipyard-core
           ssh-key: ${{ secrets.CORE_SSH_KEY }}
           # The runner's known_hosts is reset between jobs, so strict checking
@@ -179,7 +179,7 @@ jobs:
           SHA="$(git rev-parse --short HEAD)"
           BUILD_VERSION="${VERSION}-dev.${SHA}"
           CHANNEL=dev
-          PKG=github.com/shivam-jainn/shipyard-cli/cmd/cmdline
+          PKG=github.com/dock-at-the-yards/shipyard-cli/cmd/cmdline
           LDFLAGS="-s -w -buildid="
           LDFLAGS="${LDFLAGS} -X '${PKG}.Version=${BUILD_VERSION}'"
           LDFLAGS="${LDFLAGS} -X '${PKG}.Commit=${SHA}'"

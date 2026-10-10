@@ -69,7 +69,7 @@ jobs:
       - name: Checkout Engine (shipyard-core)
         uses: actions/checkout@v4
         with:
-          repository: shivam-jainn/shipyard-core
+          repository: dock-at-the-yards/shipyard-core
           # GITHUB_TOKEN is scoped to this repository and cannot read the
           # private engine, so a read-only deploy key is used instead of a PAT.
           # Forks do not receive secrets, hence the empty-string fallback.

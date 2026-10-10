@@ -4,7 +4,7 @@ name: Package
 #
 # Runs on the self-hosted Linux runner (`shipyard-linux`) because .deb/.rpm are
 # Linux formats: a macOS host cannot meaningfully build or install-test them.
-# The binaries themselves are cross-compiled on the Mac by build-mbp.yml.
+# The binaries themselves are cross-compiled on the Pi by build-mbp.yml.
 #
 # Swapping this VM for the Pi needs no edit here: the job selects on the
 # `packaging` label. See docs/RUNNERS.md.
@@ -191,7 +191,7 @@ jobs:
 
   homebrew:
     name: Homebrew formula
-    runs-on: [ self-hosted, mbp ]
+    runs-on: [ self-hosted, linux, ARM64, pi ]
     steps:
       - name: Checkout CLI
         uses: actions/checkout@v4
@@ -233,16 +233,16 @@ jobs:
           cat > shipyard.rb <<EOF
           class Shipyard < Formula
             desc "Evaluation harness and execution engine for autonomous AI agents"
-            homepage "https://github.com/shivam-jainn/shipyard-cli"
+            homepage "https://github.com/dock-at-the-yards/shipyard-cli"
             version "${V}"
             license "LicenseRef-Shipyard"
 
             on_macos do
               if Hardware::CPU.arm?
-                url "https://github.com/shivam-jainn/shipyard-cli/releases/download/${TAG}/shipyard-${TAG}-darwin-arm64.tar.gz"
+                url "https://github.com/dock-at-the-yards/shipyard-cli/releases/download/${TAG}/shipyard-${TAG}-darwin-arm64.tar.gz"
                 sha256 "${ARM_SHA}"
               else
-                url "https://github.com/shivam-jainn/shipyard-cli/releases/download/${TAG}/shipyard-${TAG}-darwin-amd64.tar.gz"
+                url "https://github.com/dock-at-the-yards/shipyard-cli/releases/download/${TAG}/shipyard-${TAG}-darwin-amd64.tar.gz"
                 sha256 "${AMD_SHA}"
               end
             end

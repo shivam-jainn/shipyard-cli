@@ -51,7 +51,7 @@ jobs:
       - name: Checkout Engine (shipyard-core)
         uses: actions/checkout@v4
         with:
-          repository: shivam-jainn/shipyard-core
+          repository: dock-at-the-yards/shipyard-core
           # GITHUB_TOKEN is scoped to this repository and cannot read the
           # private engine, so a read-only deploy key is used instead of a PAT.
           # Forks do not receive secrets, hence the empty-string fallback.
@@ -140,7 +140,7 @@ jobs:
       - name: Checkout Engine (shipyard-core)
         uses: actions/checkout@v4
         with:
-          repository: shivam-jainn/shipyard-core
+          repository: dock-at-the-yards/shipyard-core
           ssh-key: ${{ secrets.CORE_SSH_KEY }}
           ssh-strict: false
           path: shipyard-core
@@ -200,7 +200,7 @@ jobs:
       - name: Checkout Engine (shipyard-core)
         uses: actions/checkout@v4
         with:
-          repository: shivam-jainn/shipyard-core
+          repository: dock-at-the-yards/shipyard-core
           # GITHUB_TOKEN is scoped to this repository and cannot read the
           # private engine, so a read-only deploy key is used instead of a PAT.
           # Forks do not receive secrets, hence the empty-string fallback.
@@ -233,7 +233,7 @@ jobs:
         run: |
           mkdir -p bin
           CGO_ENABLED=0 go build -trimpath \
-            -ldflags="-s -w -buildid= -X 'github.com/shivam-jainn/shipyard-cli/cmd/cmdline.Version=${VERSION}'" \
+            -ldflags="-s -w -buildid= -X 'github.com/dock-at-the-yards/shipyard-cli/cmd/cmdline.Version=${VERSION}'" \
             -o "bin/shipyard-${GOOS}-${GOARCH}" ./cmd/shipyard/main.go
 
       # Only the natively-built binary can execute. The matrix builds amd64

@@ -9,7 +9,7 @@ name: Promote
 # reaches staging or main, so both of those are protected branches whose only
 # accepted input is this workflow's pull request.
 #
-# Run it with:  gh workflow run promote.yml --repo shivam-jainn/shipyard-cli
+# Run it with:  gh workflow run promote.yml --repo dock-at-the-yards/shipyard-cli
 #
 # Runs on ubuntu-latest rather than the Pi because it drives the GitHub API
 # through the `gh` CLI, which is not installed on the runner image.
