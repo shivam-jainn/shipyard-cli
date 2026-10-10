@@ -27,23 +27,11 @@ jobs:
     name: Verify
     runs-on: [ self-hosted, linux, ARM64, pi ]
     steps:
-      # actions/checkout writes the deploy key and known_hosts into RUNNER_TEMP
-      # and exports GIT_SSH_COMMAND for the rest of the job. The engine checkout
-      # (which uses the key) then leaks that into the *CLI* checkout, which is
-      # HTTPS and does not need it, and the stale _known_hosts makes it fail with
-      # 'Host key verification failed'. Populating a stable known_hosts up front
-      # removes the ordering dependency entirely.
-      - name: Set up known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-
       - name: Checkout CLI
         uses: actions/checkout@v4
 
-      # Read-only deploy key; the private engine is not reachable by GITHUB_TOKEN.
+      # The private engine is not reachable by GITHUB_TOKEN, so a
+      # fine-grained PAT (shipyard-core, read-only) is used instead.
       # actions/checkout refuses a path outside the workspace, so it lands in a
       # subdir and is then moved up to the sibling location the replace wants.
       - name: Checkout Engine (shipyard-core)
@@ -51,11 +39,7 @@ jobs:
         with:
           repository: dock-at-the-yards/shipyard-core
           path: shipyard-core
-          ssh-key: ${{ secrets.CORE_SSH_KEY }}
-          # The runner's known_hosts is reset between jobs, so strict checking
-          # fails with 'Host key verification failed'. checkout populates the
-          # host key itself via ssh-keyscan.
-          ssh-strict: false
+          token: ${{ secrets.CORE_PAT }}
           # NOTE: actions/checkout has no `retry` input. Passing one produced
           # "Unexpected input(s) 'retry', 'retry-wait-seconds'" and was ignored,
           # so the fetch flake it was meant to fix was never actually handled.
@@ -113,19 +97,6 @@ jobs:
           - { goos: darwin,  goarch: amd64 }
           - { goos: darwin,  goarch: arm64 }
     steps:
-      # actions/checkout writes the deploy key and known_hosts into RUNNER_TEMP
-      # and exports GIT_SSH_COMMAND for the rest of the job. The engine checkout
-      # (which uses the key) then leaks that into the *CLI* checkout, which is
-      # HTTPS and does not need it, and the stale _known_hosts makes it fail with
-      # 'Host key verification failed'. Populating a stable known_hosts up front
-      # removes the ordering dependency entirely.
-      - name: Set up known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-          sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-
       - name: Checkout CLI
         uses: actions/checkout@v4
 
@@ -134,11 +105,7 @@ jobs:
         with:
           repository: dock-at-the-yards/shipyard-core
           path: shipyard-core
-          ssh-key: ${{ secrets.CORE_SSH_KEY }}
-          # The runner's known_hosts is reset between jobs, so strict checking
-          # fails with 'Host key verification failed'. checkout populates the
-          # host key itself via ssh-keyscan.
-          ssh-strict: false
+          token: ${{ secrets.CORE_PAT }}
           # NOTE: actions/checkout has no `retry` input. Passing one produced
           # "Unexpected input(s) 'retry', 'retry-wait-seconds'" and was ignored,
           # so the fetch flake it was meant to fix was never actually handled.
