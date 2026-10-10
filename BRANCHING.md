@@ -140,8 +140,6 @@ This is also why the cross-compile smoke test runs on the `linux/arm64` leg: the
 matrix builds `linux/amd64` from an arm64 host, and that binary cannot execute
 here without QEMU.
 
-See [docs/RUNNERS.md](docs/RUNNERS.md) for the runner hosts themselves.
-
 ## Branch protection
 
 `main`, `staging` and `develop` are protected. `main` and `staging` require a
